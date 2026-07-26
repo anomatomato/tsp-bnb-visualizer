@@ -1,0 +1,135 @@
+ci:
+  autoupdate_commit_msg: "chore(deps): update pre-commit hooks"
+  autofix_commit_msg: "style: pre-commit fixes"
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1500"] # default = 500kB
+      - id: check-ast # Simply check whether files parse as valid python
+      - id: check-builtin-literals # Require literal syntax when initializing empty or zero Python builtin types.      - id: check-case-conflict
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-shebang-scripts-are-executable
+      - id: check-toml
+      - id: check-yaml
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: name-tests-test
+        args: ["--pytest-test-first"]
+        exclude: "^tests/packages/"
+      - id: requirements-txt-fixer
+      - id: trailing-whitespace
+        exclude: "^tests"
+
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.19
+    hooks:
+      # Update the uv lockfile
+      - id: uv-lock
+      # Autoexport `uv.lock` to `requirements.txt`
+      - id: uv-export
+
+  - repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.10.0
+    hooks:
+      - id: rst-backticks
+      - id: rst-directive-colons
+      - id: rst-inline-touching-normal
+
+  # Run Black on Python code blocks in documentation files.
+  - repo: https://github.com/asottile/blacken-docs
+    rev: 1.20.0
+    hooks:
+      - id: blacken-docs
+        additional_dependencies: [black==26.*]
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: "v3.8.3"
+    hooks:
+      - id: prettier
+        types_or: [yaml, markdown, html, css, scss, javascript, json]
+        # args: [--prose-wrap=always]
+        exclude: "^tests"
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.15
+    hooks:
+      # Run the linter
+      - id: ruff-check
+        args: ["--fix", "--show-fixes"]
+      # Run the formatter
+      - id: ruff-format
+        args: []
+
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.20.2
+  #   hooks:
+  #     - id: mypy
+  #       files: ^src/.+/(src|tests)
+  #       args: []
+  #       additional_dependencies:
+  #         - gurobipy
+  #         - matplotlib
+  #         - numpy
+  #         - pydantic
+  #         - pytest
+  #         - scikit-learn
+  #         - scikit-learn-stubs # problems with floating
+  #         - scipy
+  #         - scipy-stubs
+
+  - repo: https://github.com/facebook/pyrefly-pre-commit
+    rev: 1.1.0.dev1 # Note: this is the version of the pre-commit hook, NOT the pyrefly version used for type checking
+    hooks:
+      - id: pyrefly-check
+        name: Pyrefly (type checking)
+        pass_filenames: true # Recommended to do full repo checks. However, you can change this to `true` to only check changed files
+        language: system
+        # exclude: evaluation
+        entry: uv run --locked pyrefly check
+        # additional_dependencies:
+        #   - gurobipy
+        #   - matplotlib
+        #   - numpy
+        #   - pydantic
+        #   - pytest
+        #   - scikit-learn
+        #   - scikit-learn-stubs # problems with floating
+        #   - scipy
+        #   - scipy-stubs
+
+  # Finds common misspellings in source files
+  # - repo: https://github.com/codespell-project/codespell
+  #   rev: v2.4.1
+  #   hooks:
+  #     - id: codespell
+  #       exclude: ^(LICENSE$)
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+
+  - repo: local
+    hooks:
+      # - id: mypy
+      #   name: mypy
+      #   entry: uv run mypy
+      #   files: ^src/.+/(src|tests)
+      - id: disallow-caps
+        name: Disallow improper capitalization
+        language: pygrep
+        entry: PyBind|Numpy|Cmake|CCache|Github|PyTest
+        exclude: .pre-commit-config.yaml
+      - id: disallow-expressions
+        name: Disallow expressions
+        language: pygrep
+        entry: tool\.cmake
+        exclude: .pre-commit-config.yaml
