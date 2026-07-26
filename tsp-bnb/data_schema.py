@@ -4,7 +4,8 @@ import networkx as nx
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class NodeData(TypedDict): ...
+class NodeData(TypedDict):
+    pass
 
 
 class EdgeData(TypedDict):
@@ -13,26 +14,24 @@ class EdgeData(TypedDict):
     weight: float
 
 
-# from typing import Sequence
+TSPGraph = nx.Graph[int, NodeData, EdgeData]
 
 
 class TSPInstance(BaseModel):
     """Traveling Salesman Problem instance."""
 
-    graph: nx.Graph[float, NodeData, EdgeData] = Field(
-        ..., description="NetworkX graph with edge weights"
-    )
+    graph: TSPGraph = Field(..., description="NetworkX graph with edge weights")
     name: str = Field(default="tsp_instance", description="Instance name")
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     @field_validator("graph", mode="before")
     @classmethod
-    def is_valid_graph(cls, g: nx.Graph[float, NodeData, EdgeData]):
+    def is_valid_graph(cls, g: TSPGraph):
         n = g.number_of_nodes()
         if n < 2:
             raise ValueError("Graph needs at least 2 nodes")
-        if g.number_of_edges() != n * (n - 1) / 2:
+        if g.number_of_edges() != n * (n - 1) // 2:
             raise ValueError("Invalid graph: not complete")
         if not all(weight > 0 for _, _, weight in g.edges.data("weight")):
             raise ValueError(
