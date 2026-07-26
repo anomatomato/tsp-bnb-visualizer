@@ -13,49 +13,62 @@ You should ensure your relaxation solver produces RelaxedSolution objects that:
 
 import math
 from collections.abc import Sequence
-from functools import cached_property
+from typing import Self
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .data_schema import ConfigDict, TSPInstance
+from .data_schema import TSPInstance
 
-INFEASIBLE_LOWER_BOUND = float("inf")
+INFEASIBLE_LOWER_BOUND = math.inf
+TOL = 1e-8
 
 
 class RelaxedSolution(BaseModel):
     """
-    Encapsulates a possibly-relaxed assignment (`selection`) and its bound.
+    A relaxation of the TSP under some fixations.
 
-    Args:
-        instance: the TSPInstance
-        selection: a sequence of floats in [0,1], one per item;
-                   fixed items must match your fixation (0 or 1).
-        lower_bound: a lower bound on the value of any 0/1 solution
-                     consistent with `selection` fixations.
+    For LP relaxation: edge_fractions are the LP variables, objective_value
+    is the LP objective, and lower_bound == objective_value.
+
+    For other relaxations (Lagrangian, 1-tree): edge_fractions may be a
+    reference feasible x for the LP part, and lower_bound may come from a
+    different subproblem — so lower_bound < objective_value is allowed.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(frozen=True)
 
-    def __init__(
-        self,
-        instance: TSPInstance,
-        edge_fractions: Sequence[float],
-        lower_bound: float,
-    ):
-        if len(edge_fractions) != instance.graph.number_of_edges():
-            raise ValueError("`selection` length must match number of edges.")
-        self.instance = instance
-        self.edge_fractions = list(edge_fractions)
-        self.lower_bound = lower_bound
+    instance: TSPInstance
+    edge_fractions: Sequence[float] = Field(
+        ..., description="One fractional value per edge in instance.graph, in [0,1]"
+    )
+    lower_bound: float = Field(
+        ..., description="Lower bound on optimal tour cost under the edge fixations"
+    )
 
-        # Validate consistency: actual value must exceed or equal lower bound.
-        actual = self.objective_value
-        if math.isfinite(self.lower_bound) and self.lower_bound > actual + 1e-8:
+    # --- Validators ---
+
+    @model_validator(mode="after")
+    def _validate_consistency(self) -> Self:
+        n_edges = self.instance.graph.number_of_edges()
+        if len(self.edge_fractions) != n_edges:
             raise ValueError(
-                f"Actual value {actual} is less than lower_bound {self.lower_bound}."
+                f"`edge_fractions` length ({len(self.edge_fractions)}) "
+                f"must match number of edges ({n_edges})."
             )
 
-    @cached_property
+        if math.isfinite(self.lower_bound):
+            actual = self.objective_value
+            if self.lower_bound > actual + TOL:
+                raise ValueError(
+                    f"lower_bound ({self.lower_bound}) cannot exceed "
+                    f"objective_value ({actual})."
+                )
+
+        return self
+
+    # --- Properties ---
+
+    @property
     def objective_value(self) -> float:
         """
         Compute total cost = sum(edge.weight * fraction).
@@ -67,17 +80,21 @@ class RelaxedSolution(BaseModel):
             )
         )
 
+    # --- Factories ---
+
     @staticmethod
     def create_infeasible(instance: TSPInstance) -> "RelaxedSolution":
         """
         Return a RelaxedSolution marking an infeasible branch.
-        Its `lower_bound` is infinity and `selection` is all zeros.
+        Its `lower_bound` is infinity and `edge_fractions` is all zeros.
         """
         return RelaxedSolution(
-            instance,
-            [0.0] * instance.graph.number_of_edges(),
+            instance=instance,
+            edge_fractions=[0.0] * instance.graph.number_of_edges(),
             lower_bound=INFEASIBLE_LOWER_BOUND,
         )
+
+    # --- Queries ---
 
     def is_infeasible(self) -> bool:
         """
@@ -94,13 +111,15 @@ class RelaxedSolution(BaseModel):
             return False
         return all(0.0 <= frac <= 1.0 for frac in self.edge_fractions)
 
-    def is_integral(self, atol: float = 1e-10) -> bool:
+    def is_integral(self, atol: float = TOL) -> bool:
         """
         Return True if all fractions are integers (0 or 1).
         """
         if self.is_infeasible():
             return False
         return all(min(frac, 1 - frac) < atol for frac in self.edge_fractions)
+
+    # --- Display ---
 
     def __repr__(self) -> str:
         return f"RelaxedSolution(lb={self.lower_bound:.4f}, {self})"
@@ -117,9 +136,3 @@ class RelaxedSolution(BaseModel):
             else:
                 parts.append(f"{frac:.1f}")
         return "[" + "|".join(parts) + "]"
-
-    # def copy(self) -> "RelaxedSolution":
-    #     """
-    #     Return a deep copy of this RelaxedSolution.
-    #     """
-    #     return RelaxedSolution(self.instance, self.selection.copy(), self.lower_bound)
