@@ -59,6 +59,10 @@ class BranchingDecisions:
         new._fixations = self._fixations.copy()
         return new
 
+    def fixed_edges(self) -> list[tuple[int, float]]:
+        """Edge indices with fixed value in (0,1)."""
+        return [(i, v) for i, v in enumerate(self._fixations) if v is not None]
+
     def fixed_included_edges(self) -> list[int]:
         """Edge indices forced INTO the tour (x_ij = 1)."""
         return [i for i, v in enumerate(self._fixations) if v == 1]

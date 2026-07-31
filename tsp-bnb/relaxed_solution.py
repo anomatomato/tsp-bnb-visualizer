@@ -44,6 +44,7 @@ class RelaxedSolution(BaseModel):
     lower_bound: float = Field(
         ..., description="Lower bound on optimal tour cost under the edge fixations"
     )
+    # TODO : put SolveStatus here
 
     # --- Validators ---
 

@@ -1,34 +1,21 @@
 """
-Relaxation Module
+LP Relaxation Solver for TSP Branch-and-Bound.
 
-In branch-and-bound, a relaxation of the TSP yields a lower bound
-on the best feasible solution within a branch. If this bound exceeds your
-current best feasible solution, you can prune that branch and skip exploring it.
+Builds a HiGHS LP model for the fractional TSP at a given BnB node, applies
+the branch fixations, and iteratively adds subtour elimination constraints
+until the LP solution contains no violated subtour or a cut limit is reached.
 
-This file provides three example strategies:
-  1. VeryNaiveRelaxationSolver:
-     - Ignores capacity entirely, sets every unfixed item to 1.
-     - Fastest, loosest bound.
-  2. NaiveRelaxationSolver:
-     - Checks that already-fixed items of 1 fit capacity.
-     - Sets all unfixed items to 1, ignoring capacity beyond fixed part.
-     - Slightly tighter bound than VeryNaive.
-  3. MyRelaxationSolver:
-     - Stub for your own algorithm (e.g., fractional knapsack, propagation).
-
-You should subclass `RelaxationSolver` and implement `solve()`
-so that:
-  a) fixed decisions remain unchanged;
-  b) objective <= best 0/1 solution consistent with those decisions.
+The LP objective is a **lower bound** on the best integer tour consistent
+with the given fixations. If this bound exceeds the current best-known tour
+cost, the BnB node can be pruned.
 """
 
 import abc
 import logging
-from collections.abc import Iterable
 
 import highspy
 import networkx as nx
-from highspy import HighsVarType
+from highspy import HighsModelStatus, HighsVarType
 
 from .branching_decisions import BranchingDecisions
 from .data_schema import TSPGraph, TSPInstance
@@ -39,14 +26,12 @@ class Relaxation(abc.ABC):
     """
     Abstract base for relaxation strategies.
 
-    Implement `solve` to compute an upper bound on the best 0/1 solution
-    consistent with given decisions.
+    Implement `solve` to compute a **lower bound** on the best 0/1 TSP tour
+    consistent with the given fixations. The bound can be used by the BnB
+    search to prune nodes whose bound exceeds the best-known tour cost.
     """
 
-    def __init__(self, instance: TSPInstance, fixations: BranchingDecisions):
-        self.instance = instance
-        self.edge_fixations = fixations
-
+    def __init__(self, instance: TSPInstance, fixations: BranchingDecisions): ...
     @abc.abstractmethod
     def solve(self) -> RelaxedSolution:
         """
@@ -71,191 +56,191 @@ class _EdgeVariables:
     def __iter__(self):
         return iter(self._vars.items())
 
-    def x(self, v: int, w: int) -> highspy.highs_var:
-        """Return the variable of the edge connecting `v` and `w`"""
-        if (v, w) in self._vars:
-            return self._vars[v, w]
-        return self._vars[w, v]
+    def x(self, u: int, v: int) -> highspy.highs_var:
+        """Return the variable handle for edge (u, v) — works in either order."""
+        if (u, v) in self._vars:
+            return self._vars[u, v]
+        return self._vars[v, u]
 
-    def outgoing_edges(self, vertices: Iterable[int]):
-        for (v, w), x in self._vars.items():
-            if v in vertices and w not in vertices:
-                yield (v, w), x
-            elif w in vertices and v not in vertices:
-                yield (w, v), x
+    def outgoing_edges(self, vertices: list[int]):
+        for (u, v), x in self._vars.items():
+            if u in vertices and v not in vertices:
+                yield (u, v), x
+            elif v in vertices and u not in vertices:
+                yield (v, u), x
 
     def incident_edges(self, v: int):
+        """Yield ((u,v), var) for every edge incident to v."""
         for n in self._graph.neighbors(v):
             yield (v, n), self.x(v, n)
 
-    def as_graph(self, tol: float = 0.01):
-        """
-        Return the current solution as a graph.
-        """
-        graph: TSPGraph = nx.Graph()
-        for (v, w), x in self:
-            if tol < x.X:
-                graph.add_edge(v, w, x=x.X)
+    def all_values(self) -> dict[tuple[int, int], float]:
+        """Bulk-extract all variable values from current solution."""
+        values = self._model.allVariableValues()
+        return dict(zip(self._vars.keys(), values))
+
+    def as_graph(self, threshold: float = 0.001) -> nx.Graph[int]:
+        """Return the current LP solution as a graph (edges with x > threshold)."""
+        graph = nx.Graph()
+        graph.add_nodes_from(self._graph.nodes)
+        for (u, v), val in self.all_values().items():
+            if val > threshold:
+                graph.add_edge(
+                    u,
+                    v,
+                    x=val,
+                )
         return graph
 
 
 class LPRelaxationSolver(Relaxation):
     """
-    LP Relaxation Solver for TSP.
+    LP Relaxation Solver for TSP with branch fixations.
+
+    Builds a HiGHS model from the TSP instance and current edge fixations,
+    then solves the fractional LP. Iteratively adds subtour elimination cuts
+    until the LP contains no violated subtour (or `max_cuts` is reached).
+    Returns a `RelaxedSolution` with the edge fractions and the LP objective,
+    which serves as a lower bound on the best integer tour under these fixations.
     """
 
     def __init__(
         self,
         instance: TSPInstance,
         fixations: BranchingDecisions,
-        logger: logging.Logger | None,
+        logger: logging.Logger | None = None,
     ):
-        if logger is None:
-            logger = logging.getLogger(__name__)
-        logger.info("Creating model ...")
-        logger.info(
+        self.logger = logger if logger is not None else logging.getLogger(__name__)
+        self.logger.info("Creating model ...")
+        self.logger.info(
             f"Graph has {instance.graph.number_of_nodes()} nodes and {instance.graph.number_of_edges()} edges"
         )
 
-        super().__init__(instance, fixations)
-        self.model = highspy.Highs()
+        self.instance = instance
         self.graph = instance.graph
+        self.edge_fixations = fixations
+
+        self.model = highspy.Highs()
+        # self.model.silent()
 
         self._vars = _EdgeVariables(instance.graph, self.model)
+        self._weights: dict[tuple[int, int], float] = {
+            (u, v): weight for u, v, weight in self.graph.edges.data("weight")
+        }
 
-    def solve(self) -> RelaxedSolution:
-        self.model.run()
+        self._add_objective()
+        self._add_constraints()
+        self._apply_fixations()
 
-        solution = self.model.getSolution()
-        basis = self.model.getBasis()
+    def _add_constraints(self) -> None:
+        # Degree constraints:
+        # Every node has two incident edges.
+        for v in self.graph.nodes:
+            v_degree = self.model.qsum(x for _, x in self._vars.incident_edges(v))
+            self.model.addConstr(
+                v_degree == 2,
+                name=f"degree_constr_{v}",
+            )
+
+    def _add_objective(self) -> None:
+        tour_cost = self.model.qsum(self._weights[u, v] * x for (u, v), x in self._vars)
+        self.model.minimize(tour_cost)
+
+    def _apply_fixations(self) -> None:
+        """Fix variable bounds according to the branching decisions"""
+        edges = list(self.graph.edges)
+        for edge_idx, val in self.edge_fixations.fixed_edges():
+            edge: tuple[int, int] = edges[edge_idx]
+            u, v = edge
+            var = self._vars.x(u, v)
+
+            self.model.changeColBounds(col=var, lower_bound=val, upper_bound=val)
+
+    def _log_solve_status(self) -> None:
         info = self.model.getInfo()
-        model_status = self.model.getModelStatus()
+        status = self.model.getModelStatus()
 
-        print("Model status = ", self.model.modelStatusToString(model_status))
-        print()
-        print("Optimal objective = ", info.objective_function_value)
-        print("Iteration count = ", info.simplex_iteration_count)
-        print(
-            "Primal solution status = ",
-            self.model.solutionStatusToString(info.primal_solution_status),
+        self.logger.debug(f"Model status = {self.model.modelStatusToString(status)}")
+        self.logger.debug("")
+        self.logger.debug(f"Optimal objective ={info.objective_function_value}")
+        self.logger.debug(f"Iteration count ={info.simplex_iteration_count}")
+        self.logger.debug(
+            f"Primal solution status ={
+                (self.model.solutionStatusToString(info.primal_solution_status))
+            }"
         )
-        print(
-            "Dual solution status = ",
-            self.model.solutionStatusToString(info.dual_solution_status),
+        self.logger.debug(
+            f"Dual solution status = {
+                (self.model.solutionStatusToString(info.dual_solution_status))
+            }"
         )
-        print(
-            "Basis validity = ", self.model.basisValidityToString(info.basis_validity)
+        self.logger.debug(
+            f"Basis validity = {self.model.basisValidityToString(info.basis_validity)}"
         )
 
-        # TODO: Subtour elimination constraints and edge_fractions
+    def _find_subtours(self, tol: float = 0.01) -> list[list[int]]:
+        """Find subtours in the graph"""
+        solution_graph = self._vars.as_graph(threshold=tol)
+
+        # Find disconnected subgraphs
+        if not nx.is_connected(solution_graph):
+            # pyrefly: ignore
+            return [list(c) for c in nx.connected_components(solution_graph)]
+        # Find minimum cut separation (for fractional edges)
+        cut_value, (S, T) = nx.stoer_wagner(solution_graph, weight="x")
+        if cut_value < 2 - tol:
+            return [S]
+        return []
+
+    def _add_subtour_cuts(self, subtours: list[list[int]]) -> None:
+        """Add subtour elimination cuts: sum(x_{ij} for i in S, j not in S) >= 2"""
+        if len(subtours) > 1:
+            for subtour in subtours:
+                outgoing_edge_sum = self.model.qsum(
+                    x for _, x in self._vars.outgoing_edges(subtour)
+                )
+                self.model.addConstr(
+                    outgoing_edge_sum >= 2, name=f"sec_{'-'.join(map(str, subtour))}"
+                )
+
+    def solve(self, max_cuts: int = 100) -> RelaxedSolution:
+        """Solve the LP with lazy subtour elimination constraints and return the resulting relaxation."""
+        self.logger.info("Solving model ...")
+
+        for _ in range(max_cuts):
+            self.model.run()
+
+            # Find subtours in current fractional solution
+            subtours = self._find_subtours(tol=0.001)
+
+            if len(subtours) < 2:
+                break  # no cuts to add
+
+            # Add cuts for all subtours
+            self._add_subtour_cuts(subtours)
+
+        self._log_solve_status()
+        # solution = self.model.getSolution()
+        # basis = self.model.getBasis()
+        # info = self.model.getInfo()
+        status = self.model.getModelStatus()
+
+        if status == HighsModelStatus.kInfeasible:
+            return RelaxedSolution.create_infeasible(self.instance)
+
+        if status != HighsModelStatus.kOptimal:
+            raise RuntimeError(
+                f"HiGHs LP model terminated with unknown solution status: {self.model.modelStatusToString(status)}"
+            )
+
+        edge_fractions = self.model.allVariableValues()
+        objective_val = self.model.getObjectiveValue()
+
         return RelaxedSolution(
             instance=self.instance,
-            edge_fractions=[],
-            lower_bound=info.objective_function_value,
+            edge_fractions=edge_fractions,
+            lower_bound=objective_val,
         )
-
-
-# class VeryNaiveRelaxationSolver(Relaxation):
-#     """
-#     A relaxation solver for the knapsack problem that naively sets every unfixed
-#     item to 1 without considering the capacity constraint. This approach provides
-#     a very loose upper bound for the problem.
-#
-#     Explanation:
-#     The solver assumes that all unfixed items can be fully included in the knapsack
-#     (i.e., their selection is set to 1.0) regardless of the capacity constraint.
-#     This results in an overestimation of the objective value, making it an upper
-#     bound. The rationale is that the true optimal solution cannot exceed this
-#     value since it must respect the capacity constraint, which this naive approach
-#     ignores.
-#     """
-#
-#     def solve(
-#         self, instance: TSPInstance, decisions: BranchingDecisions
-#     ) -> RelaxedSolution:
-#         # build selection: 1.0 for fixed 1 or unfixed, 0 for fixed 0
-#         selection = [0.0 if x == 0 else 1.0 for x in decisions]
-#         # compute objective value
-#         upper = sum(item.value * sel for item, sel in zip(instance.items, selection))
-#         return RelaxedSolution(instance, selection, upper)
 
 
 MyRelaxationSolver = LPRelaxationSolver  # type: ignore[assignment]
-
-
-# class BasicRelaxationSolver(Relaxation):
-#     """
-#     Greedy fractional knapsack based on value/weight ratio.
-#     """
-#
-#     def solve(
-#         self, instance: TSPInstance, decisions: BranchingDecisions
-#     ) -> RelaxedSolution:
-#         # fix items, check feasibility
-#         used = sum(item.weight for item, x in zip(instance.items, decisions) if x == 1)
-#         if used > instance.capacity:
-#             return RelaxedSolution.create_infeasible(instance)
-#
-#         selection = [1.0 if x == 1 else 0.0 for x in decisions]
-#         remaining = instance.capacity - used
-#         # sort unfixed by ratio
-#         indices = [i for i, x in enumerate(decisions) if x is None]
-#         indices.sort(
-#             key=lambda i: instance.items[i].value / instance.items[i].weight,
-#             reverse=True,
-#         )
-#         for i in indices:
-#             w = instance.items[i].weight
-#             if w <= remaining:
-#                 selection[i] = 1.0
-#                 remaining -= w
-#             else:
-#                 selection[i] = remaining / w
-#                 break
-#         upper = sum(item.value * sel for item, sel in zip(instance.items, selection))
-#         return RelaxedSolution(instance, selection, upper)
-#
-#
-# class StrengthenedRelaxationSolver(Relaxation):
-#     """
-#     Fractional greedy plus propagation of heavy items.
-#     """
-#
-#     def _propagate(
-#         self, instance: TSPInstance, decisions: BranchingDecisions
-#     ) -> BranchingDecisions:
-#         fix = decisions.copy()
-#         capacity = instance.capacity - sum(
-#             item.weight for item, x in zip(instance.items, fix) if x == 1
-#         )
-#         for i, x in enumerate(fix):
-#             if x is None and instance.items[i].weight > capacity:
-#                 fix.fix(i, 0)
-#         return fix
-#
-#     def solve(
-#         self, instance: TSPInstance, decisions: BranchingDecisions
-#     ) -> RelaxedSolution:
-#         fix = self._propagate(instance, decisions)
-#         used = sum(item.weight for item, x in zip(instance.items, fix) if x == 1)
-#         if used > instance.capacity:
-#             return RelaxedSolution.create_infeasible(instance)
-#         selection = [1.0 if x == 1 else 0.0 for x in fix]
-#         remaining = instance.capacity - used
-#         indices = [i for i, x in enumerate(fix) if x is None]
-#         indices.sort(
-#             key=lambda i: instance.items[i].value / instance.items[i].weight,
-#             reverse=True,
-#         )
-#         for i in indices:
-#             w = instance.items[i].weight
-#             if w <= remaining:
-#                 selection[i] = 1.0
-#                 remaining -= w
-#             else:
-#                 selection[i] = remaining / w
-#                 break
-#         upper = sum(item.value * sel for item, sel in zip(instance.items, selection))
-#         return RelaxedSolution(instance, selection, upper)
-#
-#

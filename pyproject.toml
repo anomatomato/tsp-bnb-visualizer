@@ -12,5 +12,14 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "types-networkx>=3.6.1.20260724",
+  "pyrefly>=1.1.1",
+  "types-networkx>=3.6.1.20260724",
+]
+
+[tool.pyrefly]
+# project-includes = [
+#   "tsp-bnb",
+# ]
+search-path = [
+  "tsp-bnb",
 ]
