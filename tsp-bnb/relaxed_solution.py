@@ -13,14 +13,22 @@ You should ensure your relaxation solver produces RelaxedSolution objects that:
 
 import math
 from collections.abc import Sequence
+from enum import StrEnum, auto
 from typing import Self
 
+import highspy
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .data_schema import TSPInstance
 
 INFEASIBLE_LOWER_BOUND = math.inf
 TOL = 1e-8
+
+
+class SolveStatus(StrEnum):
+    OPTIMAL = auto()
+    TIME_LIMIT = auto()
+    INFEASIBLE = auto()
 
 
 class RelaxedSolution(BaseModel):
@@ -44,7 +52,8 @@ class RelaxedSolution(BaseModel):
     lower_bound: float = Field(
         ..., description="Lower bound on optimal tour cost under the edge fixations"
     )
-    # TODO : put SolveStatus here
+    status: SolveStatus = Field(..., description="Status of the relaxation solver")
+    basis: highspy.HighsBasis | None = Field(default=None, description="Solver basis")
 
     # --- Validators ---
 
@@ -93,6 +102,7 @@ class RelaxedSolution(BaseModel):
             instance=instance,
             edge_fractions=[0.0] * instance.graph.number_of_edges(),
             lower_bound=INFEASIBLE_LOWER_BOUND,
+            status=SolveStatus.INFEASIBLE,
         )
 
     # --- Queries ---
