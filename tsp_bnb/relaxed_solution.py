@@ -17,7 +17,7 @@ from enum import StrEnum, auto
 from typing import Self
 
 import highspy
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .data_schema import TSPInstance
 
@@ -43,7 +43,7 @@ class RelaxedSolution(BaseModel):
     different subproblem — so lower_bound < objective_value is allowed.
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
     instance: TSPInstance
     edge_fractions: Sequence[float] = Field(
@@ -53,9 +53,18 @@ class RelaxedSolution(BaseModel):
         ..., description="Lower bound on optimal tour cost under the edge fixations"
     )
     status: SolveStatus = Field(..., description="Status of the relaxation solver")
-    basis: highspy.HighsBasis | None = Field(default=None, description="Solver basis")
+    basis: highspy.HighsBasis | None = Field(
+        default=None, description="Solver basis to propagate to children nodes"
+    )
 
     # --- Validators ---
+
+    @field_validator("edge_fractions")
+    @classmethod
+    def _validate_edge_fractions(cls, edge_fractions: Sequence[float]):
+        if not all(0 <= edge <= 1 for edge in edge_fractions):
+            raise ValueError("edge_fractions have to be in [0,1]")
+        return edge_fractions
 
     @model_validator(mode="after")
     def _validate_consistency(self) -> Self:
@@ -111,7 +120,7 @@ class RelaxedSolution(BaseModel):
         """
         Return True if this solution represents an infeasible branch.
         """
-        return self.lower_bound == INFEASIBLE_LOWER_BOUND
+        return self.status == SolveStatus.INFEASIBLE
 
     def has_valid_fractions(self) -> bool:
         """

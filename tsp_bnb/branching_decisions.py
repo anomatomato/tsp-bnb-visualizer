@@ -1,3 +1,37 @@
+from collections.abc import Iterable
+
+
+def edge_index_of(edges: Iterable[tuple[int, int]], u: int, v: int) -> int:
+    """
+    Find the index of edge (u, v) in `edges` (handles undirected order).
+
+    Accepts any iterable of edges (list, EdgeView, generator). The iterable
+    is materialized once internally; pass `graph.edges` directly without
+    converting to a list first.
+
+    Looks up (u, v) first, then (v, u). Raises ValueError if not present.
+    The lookup is O(n) per call — for repeated lookups, build an index first.
+    """
+    edges_list = list(edges)
+    try:
+        return edges_list.index((u, v))
+    except ValueError:
+        return edges_list.index((v, u))
+
+
+def build_edge_index(
+    edges: Iterable[tuple[int, int]],
+) -> dict[frozenset[int], int]:
+    """
+    Build a frozenset-keyed lookup table for O(1) edge-to-index resolution.
+
+    Use this when you'll do many lookups against the same edge list (e.g.,
+    inside a BnB loop). The key is a frozenset so (u, v) and (v, u) both
+    resolve to the same index in an undirected graph.
+    """
+    return {frozenset(e): i for i, e in enumerate(edges)}
+
+
 class BranchingDecisions:
     """
     Per-node 0/1 branching decisions for a TSP BnB.

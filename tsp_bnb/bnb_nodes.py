@@ -1,7 +1,3 @@
-class TSPBnBNode:
-    path: list[int]
-
-
 """
 BnB Node and Factory Module
 
@@ -21,8 +17,8 @@ from collections.abc import Callable
 from enum import Enum
 
 from .branching_decisions import BranchingDecisions
+from .data_schema import TSPInstance
 from .heuristics import Heuristics, HeuristicSolution
-from .instance import Instance
 from .relaxation import Relaxation, RelaxedSolution
 
 
@@ -130,7 +126,7 @@ class NodeFactory:
 
     def __init__(
         self,
-        instance: Instance,
+        instance: TSPInstance,
         relaxation: Relaxation,
         heuristics: Heuristics,
         on_new_node: Callable[[BnBNode], None],

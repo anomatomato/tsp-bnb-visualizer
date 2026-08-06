@@ -12,14 +12,37 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  { include-group = "lint" },
+  { include-group = "test" },
+  { include-group = "types" },
+]
+lint = [
+  "pre-commit>=4.5.1",
   "pyrefly>=1.1.1",
+]
+types = [
   "types-networkx>=3.6.1.20260724",
+]
+
+test = [
+  "hypothesis>=6.164.0",
+  "pytest>=9.1.1",
 ]
 
 [tool.pyrefly]
 # project-includes = [
-#   "tsp-bnb",
+#   "tsp_bnb",
 # ]
 search-path = [
-  "tsp-bnb",
+  "tsp_bnb",
 ]
+
+[tool.pyright]
+extraPaths = ["tsp_bnb"]
+
+[tool.pytest.ini_options]
+markers = [
+  "slow: marks tests as slow (HiGHS-dependent)",
+]
+pythonpath = ["tsp_bnb"]
+testpaths = ["tests"]
