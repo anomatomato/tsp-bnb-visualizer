@@ -100,6 +100,53 @@ class FirstFractionalBranchingStrategy(BranchingStrategy):
         return tuple(node.branching_decisions.split_on(first_unfixed))
 
 
+class MostFractionalBranchingStrategy(BranchingStrategy):
+    """
+    Branch on the unfixed edge whose LP value is closest to 0.5.
+
+    Values near 0 or 1 are nearly decided. A value near 0.5 is maximally
+    undecided and is therefore a natural branching candidate.
+
+    If multiple edges are equally fractional, choose the edge with the
+    greatest travel cost.
+    """
+
+    _FRACTIONAL_TOL = 1e-8
+
+    def _sort_key(self, candidate: tuple[int, float, float]):
+        return (
+            abs(candidate[1] - 0.5),  # closest to 0.5
+            -candidate[2],  # greatest weight
+            candidate[0],  # lower index
+        )
+
+    def make_branching_decisions(self, node: BnBNode) -> tuple[BranchingDecisions, ...]:
+        graph = node.relaxed_solution.instance.graph
+        edge_weights = tuple(
+            float(weight) for _, _, weight in graph.edges.data("weight")
+        )
+
+        candidates = [
+            (edge_idx, fraction, weight)
+            for edge_idx, (fraction, weight, decision) in enumerate(
+                zip(
+                    node.relaxed_solution.edge_fractions,
+                    edge_weights,
+                    node.branching_decisions,
+                )
+            )
+            if decision is None
+            and self._FRACTIONAL_TOL < fraction < 1.0 - self._FRACTIONAL_TOL
+        ]
+
+        if not candidates:
+            return ()
+
+        selected_edge_idx = min(candidates, key=self._sort_key)[0]
+
+        return node.branching_decisions.split_on(selected_edge_idx)
+
+
 # assign the solution strategy
-MyBranchingStrategy = FirstFractionalBranchingStrategy  # type: ignore[assignment]  # noqa: F811
+MyBranchingStrategy = MostFractionalBranchingStrategy  # type: ignore[assignment]  # noqa: F811
 # </Solution>
