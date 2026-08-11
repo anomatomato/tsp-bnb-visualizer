@@ -10,28 +10,14 @@ You can implement heuristics by subclassing `Heuristics` and overriding `search(
 `search` should yield zero or more feasible `RelaxedSolution` objects.
 """
 
-import math
 from abc import ABC, abstractmethod
+from typing import cast
 
-from .data_schema import TSPInstance
+import networkx as nx
+from networkx.algorithms import approximation as approx
+
+from .data_schema import TSPGraph, TSPInstance, TSPSolution
 from .relaxed_solution import RelaxedSolution
-
-
-class HeuristicSolution(RelaxedSolution):
-    """
-    A feasible heuristic solution.
-    Inherits from `RelaxedSolution` for compatibility with the rest of the codebase.
-    """
-
-    def copy(self) -> "HeuristicSolution":
-        """
-        Return a deep copy of this heuristic solution.
-        """
-        return HeuristicSolution(
-            self.instance,
-            list(self.edge_fractions),
-            self.upper_bound,
-        )
 
 
 class Heuristics(ABC):
@@ -42,56 +28,54 @@ class Heuristics(ABC):
     """
 
     @abstractmethod
-    def search(
-        self, instance: TSPInstance, relaxed: RelaxedSolution
-    ) -> tuple[HeuristicSolution, ...]:
+    def search(self, instance: TSPInstance, relaxed: RelaxedSolution) -> TSPSolution:
         """
         Return a tuple of feasible `HeuristicSolution` objects for pruning.
         """
         ...
 
 
-class MyHeuristic(Heuristics):
+class NearestNeighborHeuristic(Heuristics):
     """
-    Your heuristic implementation.
+    Nearest Neighbor heuristic.
 
-    The simplest heuristic returns the node's relaxed solution
-    if it is already feasible (integral and within capacity).
+    - The algorithm adds a node to the solution at every iteration.
+    - The algorithm selects a node not already in the cycle whose connection to the previous node adds the least cost to the cycle.
     """
 
-    def search(
-        self, instance: TSPInstance, relaxed: RelaxedSolution
-    ) -> tuple[HeuristicSolution, ...]:
-        if relaxed.has_valid_fractions() and relaxed.is_integral():
-            heuristic_sol = HeuristicSolution(
-                instance, relaxed.edge_fractions, relaxed.upper_bound
-            )
-            return (heuristic_sol,)
-        return ()
+    def search(self, instance: TSPInstance, relaxed: RelaxedSolution) -> TSPSolution:
+        G: nx.Graph = cast(nx.Graph, instance.graph)
+        nn_cycle: list[int] = approx.greedy_tsp(G, weight="weight")
+
+        solution = TSPSolution.from_cycle(G, nn_cycle)
+
+        return solution
+
+
+def two_opt(G: TSPGraph, cycle: list[int]) -> list[int]:
+    """Improve a tour with 2-opt local search. Returns improved cycle."""
+    n = len(cycle) - 1  # cycle is closed: last == first
+    improved = True
+    while improved:
+        for i in range(n - 1):
+            for j in range(i + 2, n):
+                # Edges (cycle[i], cycle[i+1]) and (cycle[j], cycle[j+1])
+                # Reconnect as (cycle[i], cycle[j]) and (cycle[i+1], cycle[j+1])
+                a, b, c, d = cycle[i], cycle[i + 1], cycle[j], cycle[j + 1]
+                delta = (
+                    G[a][c]["weight"]
+                    + G[b][d]["weight"]
+                    - G[a][b]["weight"]
+                    - G[c][d]["weight"]
+                )
+                if delta < 0:  # improvement
+                    cycle[i + 1 : j + 1] = reversed(cycle[i + 1 : j + 1])
+                    improved = True
+    return cycle
 
 
 # <Solution>
 
 
-class RoundingDownHeuristic(Heuristics):
-    """
-    Heuristic that rounds down each fractional decision to 0 and yields the result
-    if it fits within capacity.
-    """
-
-    def search(
-        self, instance: TSPInstance, relaxed: RelaxedSolution
-    ) -> tuple[HeuristicSolution, ...]:
-        selection = [math.floor(x) for x in relaxed.edge_fractions]
-        # compute objective value by summing selected items' values
-        total_value = sum(
-            item.value * sel for item, sel in zip(instance.items, selection)
-        )
-        sol = HeuristicSolution(instance, selection, total_value)
-        if sol.has_valid_fractions():
-            return (sol,)
-        return ()
-
-
-MyHeuristic = RoundingDownHeuristic  # type: ignore[assignment]  # noqa: F811
+# MyHeuristic = NearestNeighborHeuristic  # type: ignore[assignment]
 # </Solution>
