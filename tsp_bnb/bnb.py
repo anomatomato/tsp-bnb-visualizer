@@ -18,13 +18,16 @@ for relaxation, branching, search ordering, and heuristics to observe performanc
 
 import logging
 
+from data_schema import TSPSolution
+
 from .bnb_nodes import BnBNode, NodeFactory, NodeStatus
 from .branching_strategy import BranchingStrategy
+from .cut_pool import CutPool
 from .data_schema import TSPInstance
 from .heuristics import Heuristics
+from .open_nodes import OpenNodeContainer
 from .progress_tracker import ProgressTracker
 from .relaxation import Relaxation, RelaxedSolution
-from .search_strategy import SearchStrategy
 from .solutions import SolutionPool
 
 
@@ -47,20 +50,21 @@ class TSPBnb:
         self,
         instance: TSPInstance,
         *,
-        relaxation: Relaxation,
-        search_strategy: SearchStrategy,
+        relaxation_cls: type[Relaxation],
+        search_strategy: OpenNodeContainer,
         branching_strategy: BranchingStrategy,
         heuristics: Heuristics,
     ):
         # Core attributes
         self.instance = instance
-        self.relaxation = relaxation
+        self.relaxation = relaxation_cls
         self.search_strategy = search_strategy
         self.branching_strategy = branching_strategy
         self.heuristics = heuristics
 
         # Data structures for solutions and progress tracking
         self.solutions = SolutionPool()
+        self.cut_pool = CutPool(instance.graph.nodes)
         self.progress_tracker = ProgressTracker(
             instance, search_strategy, self.solutions
         )
@@ -68,9 +72,10 @@ class TSPBnb:
         # Factory to create tree nodes, with callback on new node
         self.node_factory = NodeFactory(
             instance=instance,
-            relaxation=relaxation,
+            relaxation_cls=relaxation_cls,
             heuristics=heuristics,
             on_new_node=self.progress_tracker.on_new_node_in_tree,
+            cut_pool=self.cut_pool,
         )
 
     def _process_node(self, node: BnBNode) -> NodeStatus:
@@ -90,21 +95,26 @@ class TSPBnb:
             return node.status
 
         # 2. Bound-based prune: no better solution possible
-        if sol.upper_bound <= self.solutions.best_solution_value():
+        if sol.lower_bound >= self.solutions.best_solution_value():
             node.status = NodeStatus.PRUNED
             return node.status
 
-        # 3. Feasible solution found: integral and obeys capacity
-        if sol.has_valid_fractions() and sol.is_integral():
-            self.solutions.add(sol)
+        # 3. Feasible solution found: integral
+        if sol.is_integral():
+            feasible_sol = TSPSolution(
+                edge_selection=[int(val) for val in sol.edge_fractions],
+                cost=sol.objective_value,
+            )
+            self.solutions.add(feasible_sol)
             node.status = NodeStatus.FEASIBLE
             return node.status
 
-        # 4. Heuristic improvement: generate extra feasible solutions
-        for heur_sol in self.heuristics.search(self.instance, node.relaxed_solution):
-            # heur_sol must be feasible; pool enforces validity
-            self.solutions.add(heur_sol)
-            self.progress_tracker.on_heuristic_solution(node, heur_sol)
+        # TODO: is heuristic on every node needed?
+        # # 4. Heuristic improvement: generate extra feasible solutions
+        # for heur_sol in self.heuristics.search(self.instance, node.relaxed_solution):
+        #     # heur_sol must be feasible; pool enforces validity
+        #     self.solutions.add(heur_sol)
+        #     self.progress_tracker.on_heuristic_solution(node, heur_sol)
 
         # 5. Branch on a fractional decision variable
         branches = self.branching_strategy.make_branching_decisions(node)
@@ -121,7 +131,7 @@ class TSPBnb:
         node.status = NodeStatus.BRANCHED
         return node.status
 
-    def search(self, iteration_limit: int = 10_000) -> RelaxedSolution | None:
+    def search(self, iteration_limit: int = 10_000) -> TSPSolution | None:
         """
         Run the branch-and-bound algorithm to optimum or until iteration_limit is reached.
 
@@ -150,7 +160,7 @@ class TSPBnb:
 
             # Global prune: no better solution exists
             if (
-                self.search_strategy.upper_bound()
+                self.search_strategy.lower_bound()
                 <= self.solutions.best_solution_value()
             ):
                 logging.info("Global prune at iteration %d", iteration)

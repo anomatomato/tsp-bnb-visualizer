@@ -32,9 +32,17 @@ class Relaxation(abc.ABC):
     search to prune nodes whose bound exceeds the best-known tour cost.
     """
 
-    def __init__(self, instance: TSPInstance, fixations: BranchingDecisions): ...
+    def __init__(
+        self,
+        instance: TSPInstance,
+        fixations: BranchingDecisions,
+        *,
+        cut_pool: CutPool,
+        parent_basis: highspy.HighsBasis | None = None,
+        logger: logging.Logger | None = None,
+    ): ...
     @abc.abstractmethod
-    def solve(self) -> RelaxedSolution:
+    def solve(self, max_cuts: int = 100) -> RelaxedSolution:
         """
         Return a `RelaxedSolution` satisfying:
           - fixed edges in `decisions` remain at 0 or 1;

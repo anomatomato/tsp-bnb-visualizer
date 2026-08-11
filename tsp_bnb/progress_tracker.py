@@ -10,9 +10,8 @@ You can customize the printed table or integrate further visualization callbacks
 from datetime import datetime
 
 from .bnb_nodes import BnBNode, NodeStatus
-from .data_schema import TSPInstance
-from .heuristics import HeuristicSolution
-from .search_strategy import SearchStrategy
+from .data_schema import TSPInstance, TSPSolution
+from .open_nodes import OpenNodeContainer
 from .solutions import SolutionPool
 from .visualization import BnBVisualization
 
@@ -30,7 +29,7 @@ class ProgressTracker:
     def __init__(
         self,
         instance: TSPInstance,
-        search_strategy: SearchStrategy,
+        search_strategy: OpenNodeContainer,
         solutions: SolutionPool,
     ) -> None:
         self._instance = instance
@@ -45,7 +44,7 @@ class ProgressTracker:
 
     def upper_bound(self) -> float:
         """Global upper bound = max(queue UB, best known feasible LB)."""
-        q_ub = self._search.upper_bound()
+        q_ub = self._search.lower_bound()
         lb = self._solutions.best_solution_value()
         return max(q_ub, lb)
 
@@ -58,19 +57,15 @@ class ProgressTracker:
         self._nodes_created += 1
         self._vis.on_new_node_in_tree(node)
 
-    def on_heuristic_solution(self, node: BnBNode, sol: HeuristicSolution) -> None:
+    def on_heuristic_solution(self, node: BnBNode, sol: TSPSolution) -> None:
         """Called when a heuristic finds a new feasible solution."""
-        if not sol.has_valid_fractions() or not sol.does_obey_capacity_constraint():
-            raise ValueError(f"Invalid heuristic solution: {sol}")
         # if sol.value() >= self._solutions.best_solution_value():
         node.heuristic_solution = sol
         print(
-            f"[Heuristic] node {node.node_id} -> new feasible solution {sol} (value={sol.cost():.3f})"
+            f"[Heuristic] node {node.node_id} -> new feasible solution {sol} (value={sol.objective_value:.3f})"
         )
 
-    def on_node_pruned(
-        self, node: BnBNode, best_solution: HeuristicSolution | None
-    ) -> None:
+    def on_node_pruned(self, node: BnBNode, best_solution: TSPSolution | None) -> None:
         """Called whenever a node is pruned."""
         self._vis.on_node_pruned(node, best_solution)
 
@@ -97,7 +92,7 @@ class ProgressTracker:
         explored = self.num_iterations
         total = self._nodes_created
         depth = self._current_node.depth
-        val = self._current_node.relaxed_solution.cost()
+        val = self._current_node.relaxed_solution.lower_bound
         ub = self.upper_bound()
         lb = self.lower_bound()
         print(

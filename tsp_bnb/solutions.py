@@ -7,8 +7,7 @@ keeping track of the best one (highest value) for pruning and final output.
 You do not need to modify this file; it validates and stores your solutions.
 """
 
-from .heuristics import HeuristicSolution
-from .relaxation import RelaxedSolution
+from .data_schema import TSPSolution
 
 
 class SolutionPool:
@@ -23,51 +22,51 @@ class SolutionPool:
     """
 
     def __init__(self) -> None:
-        self._solutions: list[HeuristicSolution] = []
-        self._best_solution: HeuristicSolution | None = None
+        self._solutions: list[TSPSolution] = []
+        self._best_solution: TSPSolution | None = None
 
-    def add(self, solution: HeuristicSolution) -> None:
+    def __iter__(self):
+        return iter(self._solutions)
+
+    def add(self, solution: TSPSolution) -> None:
         """
         Add a new feasible integral solution to the pool.
 
         Raises:
             AssertionError: if `solution` is infeasible or non-integral.
         """
-        assert solution.has_valid_fractions(), (
-            "Attempted to add a solution that violates capacity; "
-            "ensure your heuristics generate only feasible solutions."
-        )
-        assert solution.is_integral(), (
-            "Attempted to add a non-integral solution; "
-            "ensure your heuristics produce integer selections."
-        )
+        # assert solution.has_valid_fractions(), (
+        #     "Attempted to add a solution that violates capacity; "
+        #     "ensure your heuristics generate only feasible solutions."
+        # )
+        # assert solution.is_integral(), (
+        #     "Attempted to add a non-integral solution; "
+        #     "ensure your heuristics produce integer selections."
+        # )
         # Add only unique solutions by value and selection
         if solution not in self._solutions:
             self._solutions.append(solution)
             # Update best if it's strictly better
-            if (
-                self._best_solution is None
-                or solution.value() > self._best_solution.value()
-            ):
+            if self._best_solution is None or solution.cost > self._best_solution.cost:
                 self._best_solution = solution
 
     def best_solution_value(self) -> float:
         """
-        Return the value of the best solution, or -inf if none.
+        Return the value of the best solution, or inf if none.
         """
         return (
-            self._best_solution.value()
+            self._best_solution.cost
             if self._best_solution is not None
-            else float("-inf")
+            else float("inf")
         )
 
-    def best_solution(self) -> HeuristicSolution | None:
+    def best_solution(self) -> TSPSolution | None:
         """
         Return the best solution, or None if no solution was added.
         """
         return self._best_solution
 
-    def all_solutions(self) -> list[RelaxedSolution]:
+    def all_solutions(self) -> list[TSPSolution]:
         """
         Return a list of all unique solutions found so far.
         """

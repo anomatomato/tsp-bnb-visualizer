@@ -122,15 +122,6 @@ class RelaxedSolution(BaseModel):
         """
         return self.status == SolveStatus.INFEASIBLE
 
-    def has_valid_fractions(self) -> bool:
-        """
-        Return True if selections
-        are in [0,1]. Returns False for infeasible marker.
-        """
-        if self.is_infeasible():
-            return False
-        return all(0.0 <= frac <= 1.0 for frac in self.edge_fractions)
-
     def is_integral(self, atol: float = TOL) -> bool:
         """
         Return True if all fractions are integers (0 or 1).

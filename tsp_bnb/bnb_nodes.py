@@ -17,8 +17,9 @@ from collections.abc import Callable
 from enum import Enum
 
 from .branching_decisions import BranchingDecisions
-from .data_schema import TSPInstance
-from .heuristics import Heuristics, HeuristicSolution
+from .cut_pool import CutPool
+from .data_schema import TSPInstance, TSPSolution
+from .heuristics import Heuristics
 from .relaxation import Relaxation, RelaxedSolution
 
 
@@ -70,8 +71,8 @@ class BnBNode:
         parent_id: int | None = None,
     ) -> None:
         # Store private copies to prevent external mutation
-        self._heuristic_solution: HeuristicSolution | None = None
-        self._relaxed_solution = relaxed_solution.copy()
+        self._heuristic_solution: TSPSolution | None = None
+        self._relaxed_solution = relaxed_solution.model_copy()
         self._branching_decisions = branching_decisions.copy()
         self.depth = depth
         self.node_id = node_id
@@ -86,16 +87,16 @@ class BnBNode:
         return isinstance(other, BnBNode) and self.node_id == other.node_id
 
     @property
-    def heuristic_solution(self) -> HeuristicSolution | None:
+    def heuristic_solution(self) -> TSPSolution | None:
         """
         Return a copy of the heuristic solution to avoid in-place edits.
         """
         if self._heuristic_solution is None:
             return None
-        return self._heuristic_solution.copy()
+        return self._heuristic_solution.model_copy()
 
     @heuristic_solution.setter
-    def heuristic_solution(self, heuristic_solution: HeuristicSolution | None) -> None:
+    def heuristic_solution(self, heuristic_solution: TSPSolution | None) -> None:
         self._heuristic_solution = heuristic_solution
 
     @property
@@ -103,7 +104,7 @@ class BnBNode:
         """
         Return a copy of the relaxed solution to avoid in-place edits.
         """
-        return self._relaxed_solution.copy()
+        return self._relaxed_solution.model_copy()
 
     @property
     def branching_decisions(self) -> BranchingDecisions:
@@ -127,22 +128,27 @@ class NodeFactory:
     def __init__(
         self,
         instance: TSPInstance,
-        relaxation: Relaxation,
+        relaxation_cls: type[Relaxation],
         heuristics: Heuristics,
         on_new_node: Callable[[BnBNode], None],
+        cut_pool: CutPool,
     ) -> None:
         self._instance = instance
-        self._relaxation = relaxation
+        self._relaxation_cls = relaxation_cls
         self._heuristics = heuristics
         self._on_new_node = on_new_node
+        self._cut_pool = cut_pool
         self._node_counter = 0
 
     def create_root(self) -> BnBNode:
         """
         Create the root node with no fixations (all decisions None).
         """
-        initial_decisions = BranchingDecisions(len(self._instance.items))
-        relaxed_solution = self._relaxation.solve(self._instance, initial_decisions)
+        initial_decisions = BranchingDecisions(self._instance.graph.number_of_edges())
+        relaxation = self._relaxation_cls(
+            self._instance, initial_decisions, cut_pool=self._cut_pool
+        )
+        relaxed_solution = relaxation.solve()
         root = BnBNode(
             relaxed_solution=relaxed_solution,
             branching_decisions=initial_decisions,
@@ -165,7 +171,13 @@ class NodeFactory:
 
         Depth is parent.depth+1; `parent_id` is parent.node_id.
         """
-        relaxed_solution = self._relaxation.solve(self._instance, decisions)
+        relaxation = self._relaxation_cls(
+            self._instance,
+            decisions,
+            cut_pool=self._cut_pool,
+            parent_basis=parent.relaxed_solution.basis,
+        )
+        relaxed_solution = relaxation.solve()
         child = BnBNode(
             relaxed_solution=relaxed_solution,
             branching_decisions=decisions,
@@ -173,6 +185,7 @@ class NodeFactory:
             node_id=self._node_counter,
             parent_id=parent.node_id,
         )
+        # TODO: Does child really need heuristic??
         heuristic_solutions = self._heuristics.search(self._instance, relaxed_solution)
         child.heuristic_solution = (
             heuristic_solutions[0] if heuristic_solutions else None

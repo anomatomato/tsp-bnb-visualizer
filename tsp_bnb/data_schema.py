@@ -1,7 +1,16 @@
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, TypeAlias, TypedDict
 
 import networkx as nx
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    NonNegativeFloat,
+    field_validator,
+)
+
+from ._utils import cycle_to_edge_selection
 
 
 class NodeData(TypedDict):
@@ -39,8 +48,8 @@ class TSPInstance(BaseModel):
     @classmethod
     def is_valid_graph(cls, g: TSPGraph):
         n = g.number_of_nodes()
-        if n < 2:
-            raise ValueError("Graph needs at least 2 nodes")
+        if n < 3:
+            raise ValueError("Graph needs at least 3 nodes")
         if g.number_of_edges() != n * (n - 1) // 2:
             raise ValueError("Invalid graph: not complete")
         if not all(weight > 0 for _, _, weight in g.edges.data("weight")):
@@ -50,18 +59,27 @@ class TSPInstance(BaseModel):
         return g
 
 
-# class City(BaseModel):
-#     x: float
-#     y: float
-#     name: str = Field(default="City")
+class TSPSolution(BaseModel):
+    """Traveling Salesman Problem Solution."""
 
-# class TSPInstance(BaseModel):
-#     """Traveling Salesman Problem instance."""
-#     cities: list[City] = Field(..., description="List of cities")
-#     distance_matrix: list[list[float]] = Field(..., description="Precomputed distance matrix")
-#     optimal_known: float | None = Field(None, description="Known optimal solution value")
+    edge_selection: Sequence[int] = Field(
+        ..., description="One integral value per edge in instance.graph, in [0,1]"
+    )
+    cost: NonNegativeFloat = Field(..., description="The overall cost of the tour.")
 
-# class TSPSolution(BaseModel):
-#     """Traveling Salesman Problem Solution."""
-#     path: Sequence[City]
-#     cost: float
+    model_config = ConfigDict(frozen=True)
+
+    @field_validator("edge_selection", mode="before")
+    @classmethod
+    def are_valid_edge_values(cls, edge_selection: Sequence[int]):
+        if not all(val in {0, 1} for val in edge_selection):
+            raise ValueError("All edge_values need to be either 0 or 1")
+        return edge_selection
+
+    @classmethod
+    def from_cycle(cls, G: nx.Graph, cycle: list[int]) -> "TSPSolution":
+        """Construct from a node cycle. Computes edge_selection and cost."""
+        selection = cycle_to_edge_selection(G, cycle)
+        cost = sum(G[n][nbr]["weight"] for n, nbr in nx.utils.pairwise(cycle))
+
+        return cls(edge_selection=selection, cost=cost)
