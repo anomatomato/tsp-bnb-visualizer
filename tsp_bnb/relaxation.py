@@ -280,5 +280,9 @@ class LPRelaxation(Relaxation):
             basis=basis,
         )
 
+    def get_solution_graph(self) -> nx.Graph[int]:
+        """Return the current LP solution as a graph (edges with x > threshold)."""
+        return self._vars.as_graph()
+
 
 # MyRelaxationSolver = LPRelaxationSolver  # type: ignore[assignment]

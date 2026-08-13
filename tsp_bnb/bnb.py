@@ -18,12 +18,10 @@ for relaxation, branching, search ordering, and heuristics to observe performanc
 
 import logging
 
-from data_schema import TSPSolution
-
 from .bnb_nodes import BnBNode, NodeFactory, NodeStatus
 from .branching_strategy import BranchingStrategy
 from .cut_pool import CutPool
-from .data_schema import TSPInstance
+from .data_schema import TSPInstance, TSPSolution
 from .heuristics import Heuristics
 from .open_nodes import OpenNodeContainer
 from .progress_tracker import ProgressTracker

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, TypeAlias, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 import networkx as nx
 from pydantic import (
@@ -31,9 +31,9 @@ class EdgeData(TypedDict):
 # `graph: TSPGraph` then resolves to `nx.Graph` at class def time, which
 # Pydantic accepts via `arbitrary_types_allowed=True`.
 if TYPE_CHECKING:
-    TSPGraph: TypeAlias = nx.Graph[int, NodeData, EdgeData]
+    type TSPGraph = nx.Graph[int, NodeData, EdgeData]
 else:
-    TSPGraph = nx.Graph
+    type TSPGraph = nx.Graph
 
 
 class TSPInstance(BaseModel):
