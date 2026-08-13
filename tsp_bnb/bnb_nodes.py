@@ -156,9 +156,8 @@ class NodeFactory:
             node_id=self._node_counter,
             parent_id=None,
         )
-        heuristic_solutions = self._heuristics.search(self._instance, relaxed_solution)
-        root.heuristic_solution = (
-            heuristic_solutions[0] if heuristic_solutions else None
+        root.heuristic_solution = self._heuristics.search(
+            self._instance, relaxed_solution
         )
 
         self._node_counter += 1
@@ -186,10 +185,10 @@ class NodeFactory:
             parent_id=parent.node_id,
         )
         # TODO: Does child really need heuristic??
-        heuristic_solutions = self._heuristics.search(self._instance, relaxed_solution)
-        child.heuristic_solution = (
-            heuristic_solutions[0] if heuristic_solutions else None
-        )
+        # heuristic_solutions = self._heuristics.search(self._instance, relaxed_solution)
+        # child.heuristic_solution = (
+        #     heuristic_solutions[0] if heuristic_solutions else None
+        # )
 
         self._node_counter += 1
         self._on_new_node(child)
