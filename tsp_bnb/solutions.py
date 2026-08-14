@@ -35,14 +35,6 @@ class SolutionPool:
         Raises:
             AssertionError: if `solution` is infeasible or non-integral.
         """
-        # assert solution.has_valid_fractions(), (
-        #     "Attempted to add a solution that violates capacity; "
-        #     "ensure your heuristics generate only feasible solutions."
-        # )
-        # assert solution.is_integral(), (
-        #     "Attempted to add a non-integral solution; "
-        #     "ensure your heuristics produce integer selections."
-        # )
         # Add only unique solutions by value and selection
         if solution not in self._solutions:
             self._solutions.append(solution)

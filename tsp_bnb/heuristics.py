@@ -39,7 +39,7 @@ class Heuristics(ABC):
     @abstractmethod
     def search(
         self, instance: TSPInstance, relaxed: RelaxedSolution | None = None
-    ) -> TSPSolution | None:
+    ) -> TSPSolution:
         """Return a feasible `TSPSolution`, or None if no tour was found.
 
         Args:
@@ -66,7 +66,7 @@ class NearestNeighborHeuristic(Heuristics):
 
     def search(
         self, instance: TSPInstance, relaxed: RelaxedSolution | None = None
-    ) -> TSPSolution | None:
+    ) -> TSPSolution:
         G: nx.Graph = cast(nx.Graph, instance.graph)
         nn_cycle: list[int] = approx.greedy_tsp(G, weight="weight")
 
@@ -91,10 +91,8 @@ class TwoOptImproved(Heuristics):
 
     def search(
         self, instance: TSPInstance, relaxed: RelaxedSolution | None = None
-    ) -> TSPSolution | None:
+    ) -> TSPSolution:
         init_sol = self.inner.search(instance, relaxed)
-        if init_sol is None:
-            return None
 
         G = cast(nx.Graph, instance.graph)
         cycle = edge_selection_to_cycle(G, init_sol.edge_selection)
