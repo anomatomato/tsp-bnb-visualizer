@@ -226,4 +226,6 @@ __marimo__/
 ARCHITECTURE.md
 PLAN.md
 .cortexkit
+.opencode
+output/
 goals/
