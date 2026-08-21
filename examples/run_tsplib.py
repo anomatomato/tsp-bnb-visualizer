@@ -1,14 +1,15 @@
 import logging
 
-from _tsplib import TspLibGraphInstanceDb
 from tsp_bnb.bnb import TSPBnb
 from tsp_bnb.branching_strategy import (
     MostFractionalBranchingStrategy,
 )
 from tsp_bnb.data_schema import TSPInstance
 from tsp_bnb.heuristics import NearestNeighborHeuristic, TwoOptImproved
-from tsp_bnb.open_nodes import OpenNodeContainer, best_bound_order
+from tsp_bnb.open_nodes import OpenNodeQueue, best_bound_order
 from tsp_bnb.relaxation import LPRelaxation
+
+from examples.tsplib import TspLibGraphInstanceDb
 
 # Set up logging
 logging.basicConfig(
@@ -27,9 +28,9 @@ def run_att48():
     bnb = TSPBnb(
         instance=instance,
         relaxation_cls=LPRelaxation,
-        search_strategy=OpenNodeContainer(priority=best_bound_order),
+        node_queue=OpenNodeQueue(priority=best_bound_order),
         branching_strategy=MostFractionalBranchingStrategy(),
-        heuristics=TwoOptImproved(NearestNeighborHeuristic()),
+        root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
     )
 
     solution = bnb.search(iteration_limit=10_000)

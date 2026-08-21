@@ -1,19 +1,16 @@
 """
-Branch-and-bound is a tree-based search for combinatorial optimization problems.
+Branch-and-bound is a tree-based search for the Traveling Salesman Problem.
 At each node, it:
- 1. Computes an upper bound via a relaxation to estimate the best possible objective.
- 2. Prunes subproblems whose bound cannot beat the current best feasible solution.
- 3. Splits (branches) on decision variables to explore promising regions of the search space.
- 4. Optionally applies heuristics to quickly find feasible solutions and improve pruning.
+  1. Computes a lower bound via an LP relaxation to estimate the cheapest possible tour.
+  2. Prunes subproblems whose bound cannot beat the current best feasible tour.
+  3. Splits (branches) on edge variables to explore promising regions of the search space.
+  4. Optionally applies heuristics to quickly find feasible tours and improve pruning.
 
-This module provides a clear, step-by-step BnB solver for the 0/1 knapsack problem, with four interchangeable components:
-  - RelaxationSolver: compute upper bounds via a relaxation
-  - SearchStrategy: manage the open node list (e.g., depth-first, best-first)
-  - BranchingStrategy: decide which item to branch on
-  - Heuristics: generate feasible integer solutions to improve pruning
-
-You do not modify this file; instead, you will implement and supply custom strategies
-for relaxation, branching, search ordering, and heuristics to observe performance differences.
+This module provides the BnB solver with four interchangeable components:
+  - Relaxation: compute lower bounds via the fractional TSP LP
+  - OpenNodeContainer: manage the open node list (e.g., best-bound, BFS, DFS)
+  - BranchingStrategy: decide which edge to branch on
+  - Heuristics: generate feasible tours to improve pruning
 """
 
 import logging
@@ -23,10 +20,12 @@ from .branching_strategy import BranchingStrategy
 from .cut_pool import CutPool
 from .data_schema import TSPInstance, TSPSolution
 from .heuristics import Heuristics
-from .open_nodes import OpenNodeContainer
+from .open_nodes import OpenNodeQueue
 from .progress_tracker import ProgressTracker
 from .relaxation import Relaxation, RelaxedSolution
-from .solutions import SolutionPool
+from .solution_pool import SolutionPool
+
+logger = logging.getLogger(__name__)
 
 
 class TSPBnb:
@@ -39,7 +38,7 @@ class TSPBnb:
             relaxation=my_relaxation,
             search_strategy=my_search_strategy,
             branching_strategy=my_branching,
-            heuristics=my_heuristics,
+            root_heuristics=my_heuristics,
         )
         best = searcher.search(iteration_limit=10000)
     """
@@ -49,29 +48,26 @@ class TSPBnb:
         instance: TSPInstance,
         *,
         relaxation_cls: type[Relaxation],
-        search_strategy: OpenNodeContainer,
+        node_queue: OpenNodeQueue,
         branching_strategy: BranchingStrategy,
-        heuristics: Heuristics,
+        root_heuristics: Heuristics,
     ):
         # Core attributes
         self.instance = instance
         self.relaxation = relaxation_cls
-        self.search_strategy = search_strategy
+        self.node_queue = node_queue
         self.branching_strategy = branching_strategy
-        self.heuristics = heuristics
+        self.root_heuristics = root_heuristics
 
         # Data structures for solutions and progress tracking
         self.solutions = SolutionPool()
         self.cut_pool = CutPool(instance.graph.nodes)
-        self.progress_tracker = ProgressTracker(
-            instance, search_strategy, self.solutions
-        )
+        self.progress_tracker = ProgressTracker(instance, node_queue, self.solutions)
 
         # Factory to create tree nodes, with callback on new node
         self.node_factory = NodeFactory(
             instance=instance,
             relaxation_cls=relaxation_cls,
-            heuristics=heuristics,
             on_new_node=self.progress_tracker.on_new_node_in_tree,
             cut_pool=self.cut_pool,
         )
@@ -80,7 +76,7 @@ class TSPBnb:
         """
         Process a single node:
           1. Prune if infeasible or bound too low.
-          2. Accept if solution is feasible (integral and within capacity).
+          2. Accept if solution is feasible (integral and a single tour).
           3. Apply heuristics to discover additional feasible solutions.
           4. Branch otherwise.
         Returns the node status after processing.
@@ -99,12 +95,21 @@ class TSPBnb:
 
         # 3. Feasible solution found: integral
         if sol.is_integral():
-            feasible_sol = TSPSolution(
-                edge_selection=[int(val) for val in sol.edge_fractions],
-                cost=sol.objective_value,
-            )
-            self.solutions.add(feasible_sol)
-            node.status = NodeStatus.FEASIBLE
+            if sol.is_feasible_tour():
+                feasible_sol = TSPSolution(
+                    edge_selection=[
+                        1 if val > 0.5 else 0 for val in sol.edge_fractions
+                    ],
+                    cost=sol.objective_value,
+                )
+                self.solutions.add(feasible_sol)
+                self.progress_tracker.on_feasible_solution(feasible_sol)
+                node.status = NodeStatus.FEASIBLE
+                return node.status
+            # Integral but disjoint subtours — cut loop failed to eliminate them.
+            # This node is a dead end: branching can't help (no fractional edges
+            # to branch on), and the "solution" isn't a valid tour.
+            node.status = NodeStatus.INFEASIBLE
             return node.status
 
         # TODO: is heuristic on every node needed?
@@ -117,13 +122,13 @@ class TSPBnb:
         # 5. Branch on a fractional decision variable
         branches = self.branching_strategy.make_branching_decisions(node)
         if not branches:
-            logging.warning(
+            logger.warning(
                 "No branches created for node %s; check branching strategy.", node
             )
 
         for decision in branches:
             child = self.node_factory.create_child(node, decision)
-            self.search_strategy.enqueue(child)
+            self.node_queue.enqueue(child)
             child.status = NodeStatus.ENQUEUED
 
         node.status = NodeStatus.BRANCHED
@@ -142,27 +147,31 @@ class TSPBnb:
         Raises:
             ValueError: if the iteration_limit is reached without completion.
         """
+
         # Initialize root node and progress tracking
         root = self.node_factory.create_root()
-        self.search_strategy.enqueue(root)
+        self.node_queue.enqueue(root)
         self.progress_tracker.start_search()
 
+        # Root heuristic for initial upper bound
+        init_sol = self.root_heuristics.search(self.instance, relaxed=None)
+        self.solutions.add(init_sol)
+        self.progress_tracker.on_heuristic_solution(root, init_sol)
+        logger.info(f"Root heuristic: initial UB = {init_sol.cost:.3f}")
+
         for iteration in range(1, iteration_limit + 1):
-            if not self.search_strategy.has_next():
+            if not self.node_queue.has_next():
                 break
 
-            node = self.search_strategy.next()
+            node = self.node_queue.next()
             self.progress_tracker.start_iteration(node)
             status = self._process_node(node)
             self.progress_tracker.end_iteration(status)
 
             # Global prune: no better solution exists
-            if (
-                self.search_strategy.lower_bound()
-                <= self.solutions.best_solution_value()
-            ):
-                logging.info("Global prune at iteration %d", iteration)
-                for pruned_node in self.search_strategy.nodes_in_queue():
+            if self.node_queue.lower_bound() >= self.solutions.best_solution_value():
+                logger.info("Global prune at iteration %d", iteration)
+                for pruned_node in self.node_queue.nodes_in_queue():
                     pruned_node.status = NodeStatus.PRUNED
                     self.progress_tracker.on_node_pruned(
                         pruned_node, self.solutions.best_solution()

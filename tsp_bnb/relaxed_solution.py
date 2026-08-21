@@ -1,13 +1,13 @@
 """
 RelaxedSolution Module
 
-This class represents a bounding solution for a knapsack branch.
-A relaxed solution may relax capacity or integrality constraints to
-compute an upper bound on the best feasible 0/1 solution under given fixations.
+This class represents a bounding solution for a TSP branch-and-bound node.
+A relaxed solution relaxes integrality constraints to compute a lower bound
+on the best feasible tour under given edge fixations.
 
 You should ensure your relaxation solver produces RelaxedSolution objects that:
-  1. Keep fixed decisions unchanged.
-  2. Have `lower_bound` <= the value of any feasible 0/1 solution under those decisions.
+  1. Keep fixed edge decisions unchanged.
+  2. Have `lower_bound` <= the cost of any feasible tour under those decisions.
   3. Pass validation checks in this class.
 """
 
@@ -17,6 +17,7 @@ from enum import StrEnum, auto
 from typing import Self
 
 import highspy
+import networkx as nx
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .data_schema import TSPInstance
@@ -129,6 +130,29 @@ class RelaxedSolution(BaseModel):
         if self.is_infeasible():
             return False
         return all(min(frac, 1 - frac) < atol for frac in self.edge_fractions)
+
+    def is_feasible_tour(self, atol: float = TOL) -> bool:
+        """True if integral AND forms a single Hamiltonian cycle.
+
+        The LP enforces degree==2 for every node, so an integral solution is a
+        collection of node-disjoint cycles. It's a valid tour iff it's connected
+        (one cycle covering all nodes). Disjoint subtours are integral but not
+        a valid tour — the cut loop failed to eliminate them.
+        """
+        if not self.is_integral(atol):
+            return False
+        graph = self.as_graph(threshold=0.5)
+        n_nodes = self.instance.graph.number_of_nodes()
+        return nx.is_connected(graph) and graph.number_of_edges() == n_nodes
+
+    def as_graph(self, threshold: float = 0.1) -> nx.Graph[int]:
+        """Return the current LP solution as a graph (edges with x > threshold)."""
+        graph = nx.Graph()
+        graph.add_nodes_from(self.instance.graph.nodes)
+        for (u, v), frac in zip(self.instance.graph.edges, self.edge_fractions):
+            if frac > threshold:
+                graph.add_edge(u, v, x=frac)
+        return graph
 
     # --- Display ---
 

@@ -136,7 +136,7 @@ class LPRelaxation(Relaxation):
         self._parent_basis = parent_basis
 
         self.model = highspy.Highs()
-        # self.model.silent()
+        self.model.silent()
 
         self._vars = _EdgeVariables(instance.graph, self.model)
         self._weights: dict[tuple[int, int], float] = {
@@ -163,14 +163,14 @@ class LPRelaxation(Relaxation):
         self.model.minimize(tour_cost)
 
     def _apply_fixations(self) -> None:
-        """Fix variable bounds according to the branching decisions"""
+        """Fix variable bounds according to the branching decisions."""
         edges = list(self._graph.edges)
         for edge_idx, val in self._edge_fixations.fixed_edges():
             edge: tuple[int, int] = edges[edge_idx]
             u, v = edge
-            var = self._vars.x(u, v)
+            col = int(self._vars.x(u, v))  # highs_var → column index
 
-            self.model.changeColBounds(col=var, lower_bound=val, upper_bound=val)
+            self.model.changeColBounds(col, val, val)
 
     def _find_subtours(self, tol: float = 0.001) -> list[frozenset[int]]:
         """Return raw subtours. One per connected component, or the smaller side
@@ -184,7 +184,7 @@ class LPRelaxation(Relaxation):
         # Find minimum cut separation (for fractional edges)
         cut_value, (S, T) = nx.stoer_wagner(solution_graph, weight="x")
         if cut_value < 2 - tol:
-            return [S if len(S) <= len(T) else T]
+            return [frozenset(S) if len(S) <= len(T) else frozenset(T)]
         return []
 
     def _add_subtour_cuts(self, subtours: list[frozenset[int]]) -> None:
@@ -234,13 +234,10 @@ class LPRelaxation(Relaxation):
             f"Basis validity = {self.model.basisValidityToString(info.basis_validity)}"
         )
 
-    def solve(self, max_cuts: int = 100) -> RelaxedSolution:
+    def solve(self, max_cuts: int = 100_000) -> RelaxedSolution:
         """Solve the LP with lazy subtour elimination constraints and return the resulting relaxation."""
-        if self._parent_basis is not None:
-            try:
-                self.model.setBasis(self._parent_basis)
-            except Exception as e:
-                self.logger.debug(f"setBasis failed (cold-start fallback): {e}")
+        # if self._parent_basis is not None:
+        #     self.model.setBasis(self._parent_basis)
 
         self.logger.info("Solving model ...")
 
@@ -269,7 +266,7 @@ class LPRelaxation(Relaxation):
             )
 
         basis = self.model.getBasis()
-        edge_fractions = tuple(x for _, x in self._vars.all_values())
+        edge_fractions = tuple(x for _, x in self._vars.all_values().items())
         objective_val = self.model.getObjectiveValue()
 
         return RelaxedSolution(
@@ -283,6 +280,3 @@ class LPRelaxation(Relaxation):
     def get_solution_graph(self) -> nx.Graph[int]:
         """Return the current LP solution as a graph (edges with x > threshold)."""
         return self._vars.as_graph()
-
-
-# MyRelaxationSolver = LPRelaxationSolver  # type: ignore[assignment]

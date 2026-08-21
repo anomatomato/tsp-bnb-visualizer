@@ -1,4 +1,8 @@
-"""Priority-based storage for open TSP branch-and-bound nodes."""
+"""
+Priority-based storage for open TSP branch-and-bound nodes.
+
+You can implement your own priority functions, such as BFS, DFS and best_bound.
+"""
 
 import heapq
 import math
@@ -36,7 +40,7 @@ class _QueueEntry:
     node: BnBNode = field(compare=False)
 
 
-class OpenNodeContainer:
+class OpenNodeQueue:
     """Manage unexplored TSP nodes in a min-heap."""
 
     def __init__(self, priority: PriorityFunction = best_bound_order) -> None:
@@ -76,7 +80,7 @@ class OpenNodeContainer:
         return iter(entry.node for entry in self._queue)
 
     def lower_bound(self) -> float:
-        """Return smallest open-node relaxed lower bound, or `math.inf` empty."""
+        """Return smallest open-node relaxed lower bound, or `math.inf` if empty."""
         return min(
             (node.relaxed_solution.lower_bound for node in self.nodes_in_queue()),
             default=math.inf,

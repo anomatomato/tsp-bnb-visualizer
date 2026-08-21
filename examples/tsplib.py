@@ -11,9 +11,11 @@ from pathlib import Path
 
 import networkx as nx
 
+_DATA_DIR = Path(__file__).resolve().parent / "data"
+
 
 class TspLibGraphInstanceDb:
-    def __init__(self, archive_path: Path = Path("./ALL_tsp.tar.gz")):
+    def __init__(self, archive_path: Path = _DATA_DIR / "ALL_tsp.tar.gz"):
         self.archive_path = archive_path
         self.instance_names = [
             # Integer coordinate based instances <= 1_000 nodes
@@ -97,6 +99,7 @@ class TspLibGraphInstanceDb:
         return g
 
     def __getitem__(self, name):
+        self.download()
         # The instance will be in "name.tsp.gz"
         with tarfile.open(self.archive_path, "r:gz") as t:
             f_ = t.extractfile(name + ".tsp.gz")

@@ -11,9 +11,9 @@ from datetime import datetime
 
 from .bnb_nodes import BnBNode, NodeStatus
 from .data_schema import TSPInstance, TSPSolution
-from .open_nodes import OpenNodeContainer
-from .solutions import SolutionPool
-from .visualization import BnBVisualization
+from .export import BnBSerializer
+from .open_nodes import OpenNodeQueue
+from .solution_pool import SolutionPool
 
 
 class ProgressTracker:
@@ -29,13 +29,13 @@ class ProgressTracker:
     def __init__(
         self,
         instance: TSPInstance,
-        search_strategy: OpenNodeContainer,
+        search_strategy: OpenNodeQueue,
         solutions: SolutionPool,
     ) -> None:
         self._instance = instance
         self._search = search_strategy
         self._solutions = solutions
-        self._vis = BnBVisualization(instance)
+        self._serializer = BnBSerializer(instance)
 
         self._start_time: datetime | None = None
         self.num_iterations = 0
@@ -43,31 +43,45 @@ class ProgressTracker:
         self._current_node: BnBNode | None = None
 
     def upper_bound(self) -> float:
-        """Global upper bound = max(queue UB, best known feasible LB)."""
-        q_ub = self._search.lower_bound()
-        lb = self._solutions.best_solution_value()
-        return max(q_ub, lb)
+        """Best feasible tour cost found so far (incumbent)."""
+        return self._solutions.best_solution_value()
 
     def lower_bound(self) -> float:
-        """Current best feasible solution value."""
-        return self._solutions.best_solution_value()
+        """Global lower bound = queue_lb"""
+        q_lb = self._search.lower_bound()
+        # lb = self._solutions.best_solution_value()
+        return q_lb
 
     def on_new_node_in_tree(self, node: BnBNode) -> None:
         """Called whenever a new node is generated."""
         self._nodes_created += 1
-        self._vis.on_new_node_in_tree(node)
+        self._serializer.on_new_node_in_tree(node, iteration=self.num_iterations)
 
     def on_heuristic_solution(self, node: BnBNode, sol: TSPSolution) -> None:
         """Called when a heuristic finds a new feasible solution."""
         # if sol.value() >= self._solutions.best_solution_value():
         node.heuristic_solution = sol
-        print(
-            f"[Heuristic] node {node.node_id} -> new feasible solution {sol} (value={sol.objective_value:.3f})"
+        # print(
+        #     f"[Heuristic] node {node.node_id} -> new feasible solution {sol} (cost={sol.cost:.3f})"
+        # )
+
+        self._serializer.on_heuristic_solution(
+            node,
+            sol,
         )
+
+        self.on_feasible_solution(sol)
+
+    def on_feasible_solution(self, sol: TSPSolution) -> None:
+        """Called when a feasible solution is found (integral LP or heuristic)."""
+        if sol == self._solutions.best_solution():
+            self._serializer.on_best_solution_updated(
+                sol, iteration=self.num_iterations
+            )
 
     def on_node_pruned(self, node: BnBNode, best_solution: TSPSolution | None) -> None:
         """Called whenever a node is pruned."""
-        self._vis.on_node_pruned(node, best_solution)
+        self._serializer.on_node_pruned(node)
 
     def start_search(self) -> None:
         """Initialize search reporting and print header."""
@@ -100,11 +114,8 @@ class ProgressTracker:
             f"{status.value:>13} {val:7.1f} {ub:7.1f} {lb:7.1f}"
         )
         # Visualization callback
-        self._vis.on_node_processed(
-            self._current_node,
-            lb=lb,
-            ub=ub,
-            best_solution=self._solutions.best_solution(),
+        self._serializer.on_node_processed(
+            self._current_node, lb=lb, ub=ub, iteration=self.num_iterations
         )
         # reset per-iteration data
         self._current_node = None
@@ -123,6 +134,6 @@ class ProgressTracker:
             print(f"Elapsed time: {duration}.")
         # write visualization
         ts = datetime.now().strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
-        self._vis.visualize(
-            self._solutions.best_solution(), f"bnb-{self._instance.id}_{ts}.html"
-        )
+        # self._vis.visualize(
+        #     self._solutions.best_solution(), f"bnb-{self._instance.name}_{ts}.html"
+        # )

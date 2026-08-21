@@ -1,4 +1,5 @@
 alias s := setup
+alias e := example
 alias t := test
 alias u := update-all
 
@@ -51,3 +52,7 @@ update-python:
         git add {{ uv_lock_file }} {{ requirements_file }}
         git commit -m "{{ python_update_commit_msg }}"
     fi
+
+# Run tsplib example script
+example:
+    uv run python -m examples.run_tsplib

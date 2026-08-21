@@ -2,7 +2,7 @@
 SolutionPool Module
 
 Manage the set of feasible integer solutions found during the BnB search,
-keeping track of the best one (highest value) for pruning and final output.
+keeping track of the best one (lowest cost) for pruning and final output.
 
 You do not need to modify this file; it validates and stores your solutions.
 """
@@ -39,7 +39,7 @@ class SolutionPool:
         if solution not in self._solutions:
             self._solutions.append(solution)
             # Update best if it's strictly better
-            if self._best_solution is None or solution.cost > self._best_solution.cost:
+            if self._best_solution is None or solution.cost < self._best_solution.cost:
                 self._best_solution = solution
 
     def best_solution_value(self) -> float:

@@ -3,12 +3,12 @@ BnB Node and Factory Module
 
 This module defines the core data structures for nodes in your branch-and-bound tree,
 and a factory to create new nodes. A node encapsulates:
-  - a relaxed solution (upper-bound) under current fixations,
-  - branching decisions (which items are fixed to 0 or 1),
+  - a relaxed solution (lower bound) under current edge fixations,
+  - branching decisions (which edges are fixed to 0 or 1),
   - metadata (depth, unique IDs, status).
 
 You will not modify this file directly; instead, focus on supplying your own
-`BranchingDecisions` and `RelaxationSolver` implementations.
+`BranchingDecisions` and `Relaxation` implementations.
 """
 
 from __future__ import annotations
@@ -19,7 +19,6 @@ from enum import Enum
 from .branching_decisions import BranchingDecisions
 from .cut_pool import CutPool
 from .data_schema import TSPInstance, TSPSolution
-from .heuristics import Heuristics
 from .relaxation import Relaxation, RelaxedSolution
 
 
@@ -119,8 +118,8 @@ class NodeFactory:
     Factory for creating root and child nodes in BnB search.
 
     Args:
-        instance: your Knapsack problem instance.
-        relaxation: a RelaxationSolver to compute upper bounds.
+        instance: your TSP problem instance.
+        relaxation: a Relaxation to compute lower bounds.
         heuristics: a Heuristics instance to generate feasible solutions.
         on_new_node: callback invoked after each node creation (e.g. for logging).
     """
@@ -129,13 +128,11 @@ class NodeFactory:
         self,
         instance: TSPInstance,
         relaxation_cls: type[Relaxation],
-        heuristics: Heuristics,
         on_new_node: Callable[[BnBNode], None],
         cut_pool: CutPool,
     ) -> None:
         self._instance = instance
         self._relaxation_cls = relaxation_cls
-        self._heuristics = heuristics
         self._on_new_node = on_new_node
         self._cut_pool = cut_pool
         self._node_counter = 0
@@ -155,9 +152,6 @@ class NodeFactory:
             depth=0,
             node_id=self._node_counter,
             parent_id=None,
-        )
-        root.heuristic_solution = self._heuristics.search(
-            self._instance, relaxed_solution
         )
 
         self._node_counter += 1
@@ -184,11 +178,6 @@ class NodeFactory:
             node_id=self._node_counter,
             parent_id=parent.node_id,
         )
-        # TODO: Does child really need heuristic??
-        # heuristic_solutions = self._heuristics.search(self._instance, relaxed_solution)
-        # child.heuristic_solution = (
-        #     heuristic_solutions[0] if heuristic_solutions else None
-        # )
 
         self._node_counter += 1
         self._on_new_node(child)

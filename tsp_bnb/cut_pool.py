@@ -30,7 +30,7 @@ class CutPool:
     def add(self, subtour: Iterable[int]) -> frozenset[int] | None:
         """
         Register a new cut. Duplicates and complements are silently ignored.
-        Returns the canoncial form, or None if degenerate.
+        Returns the canonical form, or None if degenerate.
         """
         s = frozenset(subtour)
         canonical = self._canonicalize(s)

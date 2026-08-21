@@ -9,6 +9,7 @@ dependencies = [
   "matplotlib>=3.11.1",
   "networkx>=3.6.1",
   "pydantic>=2.13.4",
+  "scipy>=1.18.0",
 ]
 
 [dependency-groups]

@@ -49,42 +49,21 @@ class FirstUndecidedBranchingStrategy(BranchingStrategy):
         return node.branching_decisions.split_on(first_unfixed)
 
 
-class MyBranchingStrategy(BranchingStrategy):
-    """
-    Your implementation of a branching strategy.
-
-    Decide which variable(s) to branch on at each node using information
-    from the node's relaxed solution (e.g., fractional values, scores, etc.).
-    The simplest strategy is to pick an unfixed variable and split on 0/1.
-    """
-
-    def make_branching_decisions(self, node: BnBNode) -> tuple[BranchingDecisions, ...]:
-        # placeholder: branch on the first unfixed variable
-        first_unfixed = min(
-            (i for i, val in enumerate(node.branching_decisions) if val is None),
-            default=-1,
-        )
-        if first_unfixed < 0:
-            return ()
-        return node.branching_decisions.split_on(first_unfixed)
-
-
-# <Solution>
-
-
 class FirstFractionalBranchingStrategy(BranchingStrategy):
     """
     Branch on the first non-integer variable from the relaxed solution.
     If none, fall back to the first unfixed decision variable.
     """
 
+    _FRACTIONAL_TOL = 1e-8
+
     def make_branching_decisions(self, node: BnBNode) -> tuple[BranchingDecisions, ...]:
-        # find first fractional index in relaxed_solution.selection
+        # find first fractional index in relaxed_solution.edge_fractions
         frac_idx = min(
             (
                 i
                 for i, x in enumerate(node.relaxed_solution.edge_fractions)
-                if x != int(x)
+                if min(x, 1.0 - x) >= self._FRACTIONAL_TOL
             ),
             default=-1,
         )
@@ -147,6 +126,5 @@ class MostFractionalBranchingStrategy(BranchingStrategy):
         return node.branching_decisions.split_on(selected_edge_idx)
 
 
-# assign the solution strategy
-MyBranchingStrategy = MostFractionalBranchingStrategy  # type: ignore[assignment]  # noqa: F811
-# </Solution>
+# Default branching strategy alias
+MyBranchingStrategy = MostFractionalBranchingStrategy  # type: ignore[assignment]
