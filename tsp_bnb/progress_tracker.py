@@ -47,10 +47,8 @@ class ProgressTracker:
         return self._solutions.best_solution_value()
 
     def lower_bound(self) -> float:
-        """Global lower bound = queue_lb"""
-        q_lb = self._search.lower_bound()
-        # lb = self._solutions.best_solution_value()
-        return q_lb
+        """Global lower bound = min LP bound over all open nodes."""
+        return self._search.lower_bound()
 
     def on_new_node_in_tree(self, node: BnBNode) -> None:
         """Called whenever a new node is generated."""
@@ -85,10 +83,10 @@ class ProgressTracker:
 
     def start_search(self) -> None:
         """Initialize search reporting and print header."""
-        self._start_time = datetime.now()
+        self._start_time = datetime.now().astimezone()
         header = (
             f"{'Iter':>5} {'Explored/Total':>15} {'Depth':>5} "
-            f"{'Status':>10} {'Val':>7} {'UB':>7} {'LB':>7}"
+            f"{'Status':>10} {'NodeLB':>12} {'Incumbent':>11} {'GlobalLB':>11}"
         )
         print("BnB search started:")
         print(header)
@@ -106,34 +104,39 @@ class ProgressTracker:
         explored = self.num_iterations
         total = self._nodes_created
         depth = self._current_node.depth
-        val = self._current_node.relaxed_solution.lower_bound
-        ub = self.upper_bound()
-        lb = self.lower_bound()
+        node_lb = self._current_node.relaxed_solution.lower_bound
+        incumbent = self.upper_bound()
+        global_lb = self.lower_bound()
         print(
-            f"{self.num_iterations:5d} {explored:7d}/{total:<6d}{depth:6d} "
-            f"{status.value:>13} {val:7.1f} {ub:7.1f} {lb:7.1f}"
+            f"{self.num_iterations:5d} {explored:7d}/{total:<6d}{depth:5d} "
+            f"{status.value:>13} {node_lb:10.1f} {incumbent:10.1f} {global_lb:11.1f}"
         )
         # Visualization callback
         self._serializer.on_node_processed(
-            self._current_node, lb=lb, ub=ub, iteration=self.num_iterations
+            self._current_node,
+            lb=global_lb,
+            ub=incumbent,
+            iteration=self.num_iterations,
         )
         # reset per-iteration data
         self._current_node = None
 
     def end_search(self) -> None:
         """Finalize reporting and output summary and visualization."""
-        duration = datetime.now() - self._start_time if self._start_time else None
+        duration = (
+            datetime.now().astimezone() - self._start_time if self._start_time else None
+        )
         print("\nSearch finished.")
         print(
             f"Iterations: {self.num_iterations}, Nodes created: {self._nodes_created}."
         )
-        best = self._solutions.best_solution()
+        # best = self._solutions.best_solution()
         val = self._solutions.best_solution_value()
-        print(f"Best solution: {best} with value {val:.3f}.")
+        print(f"Best solution: cost {val:.3f}.")
         if duration:
             print(f"Elapsed time: {duration}.")
         # write visualization
-        ts = datetime.now().strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
+        # ts = datetime.now().astimezone().strftime("%Y-%m-%d_%Hh-%Mm-%Ss")
         # self._vis.visualize(
         #     self._solutions.best_solution(), f"bnb-{self._instance.name}_{ts}.html"
         # )

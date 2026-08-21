@@ -157,7 +157,7 @@ class TSPBnb:
         init_sol = self.root_heuristics.search(self.instance, relaxed=None)
         self.solutions.add(init_sol)
         self.progress_tracker.on_heuristic_solution(root, init_sol)
-        logger.info(f"Root heuristic: initial UB = {init_sol.cost:.3f}")
+        # logger.info(f"Root heuristic: initial UB = {init_sol.cost:.3f}")
 
         for iteration in range(1, iteration_limit + 1):
             if not self.node_queue.has_next():

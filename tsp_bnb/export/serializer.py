@@ -2,7 +2,7 @@
 
 import logging
 import webbrowser
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 from ..bnb_nodes import BnBNode
@@ -45,8 +45,8 @@ class BnBSerializer:
         # Run directory paths (computed upfront, created lazily on first render).
         # Computing paths here keeps the types as Path (not Path | None), so
         # render calls stay clean — no Optional unwrapping needed.
-        ts = datetime.now(tz=timezone.utc).strftime("%Y%m%d_%H%M%S")
-        self._run_dir: Path = self._output_root / "runs" / f"run_{ts}"
+        ts = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
+        self._run_dir: Path = self._output_root / "runs" / f"run_{instance.name}_{ts}"
         self._images_dir: Path = self._run_dir / "images"
         self._dirs_created: bool = False
 

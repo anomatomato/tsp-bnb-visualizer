@@ -124,10 +124,7 @@ class LPRelaxation(Relaxation):
         logger: logging.Logger | None = None,
     ):
         self.logger = logger if logger is not None else logging.getLogger(__name__)
-        self.logger.info("Creating model ...")
-        self.logger.info(
-            f"Graph has {instance.graph.number_of_nodes()} nodes and {instance.graph.number_of_edges()} edges"
-        )
+        # self.logger.info("Creating model ...")
 
         self._instance = instance
         self._graph = instance.graph
@@ -239,7 +236,7 @@ class LPRelaxation(Relaxation):
         # if self._parent_basis is not None:
         #     self.model.setBasis(self._parent_basis)
 
-        self.logger.info("Solving model ...")
+        # self.logger.info("Solving model ...")
 
         for _ in range(max_cuts):
             self.model.run()
