@@ -1,5 +1,6 @@
 alias s := setup
 alias e := example
+alias c := clean
 alias t := test
 alias u := update-all
 
@@ -23,6 +24,10 @@ setup: install pre_commit_setup
 # Run pytest
 test:
     uv run pytest src
+
+# Cleanup run artifacts
+clean:
+    rm -rf output/runs/*
 
 # Update everything relevant
 update-all: update-pre-commit update-python
