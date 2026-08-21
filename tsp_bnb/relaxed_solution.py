@@ -63,7 +63,10 @@ class RelaxedSolution(BaseModel):
     @field_validator("edge_fractions")
     @classmethod
     def _validate_edge_fractions(cls, edge_fractions: Sequence[float]):
-        if not all(0 <= edge <= 1 for edge in edge_fractions):
+        # LP solvers return values with floating-point noise (e.g. 1.0000000000000002
+        # or -0.0). Use a tolerance so valid solutions aren't rejected.
+        tol = 1e-9
+        if not all(-tol <= edge <= 1 + tol for edge in edge_fractions):
             raise ValueError("edge_fractions have to be in [0,1]")
         return edge_fractions
 
