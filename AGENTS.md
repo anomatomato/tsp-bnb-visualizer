@@ -1,11 +1,11 @@
 # AGENTS.md
 
-Repository: TSP Branch-and-Bound visualizer (Python + HiGHS, Vue + D3 frontend).
+Repository: TSP Branch-and-Bound visualizer (Python + HiGHS backend, React + React Flow frontend).
 Read `ARCHITECTURE.md` and `PLAN.md` for the high-level design before starting.
 
 ## Setup
 
-Python 3.14+. All package management via `uv` (lockfile is `uv.lock`).
+Python 3.14+. All Python package management via `uv` (lockfile is `uv.lock`).
 
 ```bash
 uv sync                          # install deps + dev group
@@ -18,22 +18,19 @@ uv run ruff format               # format
 uv run pre-commit run --all-files  # full pre-commit suite
 ```
 
-Frontend tooling uses Node 22 (`mise.toml`).
+Frontend: Node 22 (`mise.toml`), pnpm, lives in `frontend/`.
+
+```bash
+pnpm -C frontend install       # deps (node_modules)
+pnpm -C frontend dev           # Vite dev server
+pnpm -C frontend build         # tsc -b + vite build
+pnpm -C frontend lint          # ESLint
+pnpm -C frontend typecheck     # tsc --noEmit
+```
 
 `pyproject.toml` configures `pythonpath = ["tsp_bnb"]` and `search-path = ["tsp_bnb"]` for pytest / pyrefly / pyright — so tests and source files can `from tsp_bnb import ...` directly without an editable install.
 
 ## Critical landmines
-
-### `tsp_bnb/visualization.py` blocks every test import
-
-`visualization.py` does `from jinja2 import Template` at module top, and `progress_tracker.py` imports it unconditionally. `jinja2` is not in `pyproject.toml` deps. As a result **every** test fails with `ModuleNotFoundError: No module named 'jinja2'` even when unrelated to visualization. The file is dead knapsack-era code that also references removed methods (`BnBNode.cost()`, `BranchingDecisions.included_items()`, `does_obey_capacity_constraint`).
-
-Fix once, in order of effort:
-
-- **A:** delete `tsp_bnb/visualization.py`, remove the import in `progress_tracker.py`, and remove any calls to it.
-- **B:** lazy-import `BnBVisualization` inside the methods that use it; guard `_vis.X()` calls with `if self._vis: ...`.
-
-Without one of these, no test can run.
 
 ### HiGHS APIs that bite
 
@@ -60,6 +57,15 @@ decisions.fix(edge_index_of(graph.edges, 0, 1), 1)  # NOT decisions.fix((0, 1), 
 
 `fix(edge_index, value)` raises `ValueError` if value is not 0 or 1, or if the edge is already fixed.
 
+## Frontend conventions
+
+- **Spacing & sizing scale** (from _Refactoring UI_): in code we write ourselves, use only Tailwind spacing values `1 2 3 4 6 8 12 16 24 32 48 64 96 128 160 192` (px = value × 4). Never in-between values (`p-5`, `gap-14`, `w-[18px]`) in our own code — the scale is enforced by convention. shadcn components' internal values (`gap-1.5`, `h-8`, `size-3.5`) are exempt. Full table in ARCHITECTURE.md.
+- TypeScript path alias `@/` → `src/` is configured in BOTH `frontend/tsconfig.app.json` (paths) and `frontend/vite.config.ts` (resolve.alias). Changing one without the other breaks either the type checker or the bundler.
+- React Flow: `nodeTypes`/`edgeTypes` maps at **module scope**, never inline in a component.
+- Theming: shadcn CSS-variable tokens in `index.css` (`:root`/`.dark`), toggled by `components/theme-provider.tsx`; React Flow gets `colorMode={resolvedTheme}`.
+- pre-commit: the root `prettier` hook excludes `frontend/`; the `prettier-frontend` hook runs frontend's own prettier via `scripts/prettier-frontend.sh` (requires `pnpm -C frontend install`).
+- Never track Vite's `.vite/` dependency cache.
+
 ## Test conventions
 
 - All test files must be `test_*.py` (enforced by pre-commit `name-tests-test --pytest-test-first`).
@@ -70,25 +76,22 @@ decisions.fix(edge_index_of(graph.edges, 0, 1), 1)  # NOT decisions.fix((0, 1), 
 ## Project structure
 
 - `tsp_bnb/` — algorithm package. The actual Python code (HiGHS, NetworkX, Pydantic).
-- `frontend/` — Vue + D3 visualizer (stub, not yet implemented).
-- `server/` — FastAPI WebSocket server (stub, not yet implemented).
+- `tsp_bnb/export/` — Pydantic export models, matplotlib/networkx SVG renderer, `BnBSerializer` (writes `bnb_state.json` + run directory).
+- `examples/` — runnable scripts (`uv run python -m examples.run_tsplib`, eil51 default) and the TSPLIB loader (EUC_2D instances only). `examples/data/` holds the TSPLIB archive.
+- `frontend/` — React + Vite + pnpm visualizer (React Flow, shadcn/ui, Tailwind v4). See ARCHITECTURE.md for the `src/` layout.
 - `tests/` — pytest tests + `conftest.py`.
-- `main.py` — placeholder entry point (`print("Hello from bnb-visualizer!")`).
-- `ARCHITECTURE.md` — full system design.
-- `PLAN.md` — implementation roadmap and current status.
-
-The visualization (frontend) is the main development effort per supervisor direction.
+- `main.py` — placeholder entry point.
+- `ARCHITECTURE.md` / `PLAN.md` — system design and roadmap.
 
 ## Tooling
 
 - Type check: **pyrefly** (not mypy). Config in `[tool.pyrefly]` of `pyproject.toml`.
 - Lint + format: **ruff** (via pre-commit).
 - Property tests: **hypothesis** + **pytest**.
-- pre-commit hooks: pyrefly, ruff, prettier, blacken-docs, shellcheck, uv-lock, uv-export, name-tests-test, disallow-caps.
+- pre-commit hooks: pyrefly, ruff, prettier (+ `prettier-frontend`), blacken-docs, shellcheck, uv-lock, uv-export, name-tests-test, disallow-caps.
 
 ## Reference
 
-- Reuse BnB structure from `../alglab/ws2526_alglab_internal/sheets/02_bnb`.
 - HiGHS Python API: <https://highspy.readthedocs.io/> — use the modelling API (`addVariable`, `addConstr`, `minimize`, `changeColBounds`, `vals()`) over the low-level matrix API for readability.
 - Pydantic v2 for all data models. Use `model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)` when storing `nx.Graph` or other non-pydantic types.
 - NetworkX 3.6+ typing: use `nx.Graph[int, NodeData, EdgeData]` for type hints, but wrap with `TYPE_CHECKING` for runtime (NetworkX 3.6.1 does not support runtime subscripting of `nx.Graph`).
