@@ -56,7 +56,7 @@ repos:
       - id: prettier
         types_or: [yaml, markdown, html, css, scss, javascript, json]
         # args: [--prose-wrap=always]
-        exclude: "^tests"
+        exclude: "^(tests|frontend/)"
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.3
@@ -128,6 +128,12 @@ repos:
         language: pygrep
         entry: PyBind|Numpy|Cmake|CCache|Github|PyTest
         exclude: .pre-commit-config.yaml
+      - id: prettier-frontend
+        name: Prettier (frontend, with tailwind plugin)
+        language: system
+        entry: scripts/prettier-frontend.sh
+        files: ^frontend/
+        types_or: [javascript, ts, tsx, css, json, html, markdown, yaml]
       - id: disallow-expressions
         name: Disallow expressions
         language: pygrep

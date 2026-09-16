@@ -1,3 +1,25 @@
+# React + TypeScript + Vite + shadcn/ui
+
+This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+
+## Adding components
+
+To add components to your app, run the following command:
+
+```bash
+npx shadcn@latest add button
+```
+
+This will place the ui components in the `src/components` directory.
+
+## Using components
+
+To use the components in your app, import them as follows:
+
+```tsx
+import { Button } from "@/components/ui/button"
+```
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -43,15 +65,15 @@ export default defineConfig([
       // other options...
     },
   },
-]);
+])
 ```
 
 You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
+import reactX from "eslint-plugin-react-x"
+import reactDom from "eslint-plugin-react-dom"
 
 export default defineConfig([
   globalIgnores(["dist"]),
@@ -72,5 +94,5 @@ export default defineConfig([
       // other options...
     },
   },
-]);
+])
 ```
