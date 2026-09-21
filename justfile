@@ -3,12 +3,15 @@ alias e := example
 alias c := clean
 alias t := test
 alias u := update-all
+alias uf := update-frontend
 
 pre_commit_file := ".pre-commit-config.yaml"
 pre_commit_msg := "chore(deps): update pre-commit hooks"
 uv_lock_file := "uv.lock"
 requirements_file := "requirements.txt"
 python_update_commit_msg := "chore(deps): update python packages"
+frontend_dir := "frontend"
+frontend_update_commit_msg := "chore(deps): update frontend packages"
 
 # Install python dependencies
 install:
@@ -23,14 +26,14 @@ setup: install pre_commit_setup
 
 # Run pytest
 test:
-    uv run pytest src
+    uv run pytest
 
 # Cleanup run artifacts
 clean:
     rm -rf output/runs/*
 
 # Update everything relevant
-update-all: update-pre-commit update-python
+update-all: update-pre-commit update-python update-frontend
 
 # Update pre-commit hooks
 update-pre-commit:
@@ -56,6 +59,19 @@ update-python:
         uv export --frozen --output-file={{ requirements_file }}
         git add {{ uv_lock_file }} {{ requirements_file }}
         git commit -m "{{ python_update_commit_msg }}"
+    fi
+
+# Update frontend dependencies to latest versions (majors allowed; rewrites package.json + lockfile)
+update-frontend *FLAGS:
+    #!/usr/bin/env bash
+    set -euxo pipefail
+    mise exec -- pnpm -C {{ frontend_dir }} update {{FLAGS}}
+    if ! git diff --quiet -- {{ frontend_dir }}/pnpm-lock.yaml {{ frontend_dir }}/package.json; then
+        echo "Changes detected in frontend lockfile/manifest, committing..."
+        git add {{ frontend_dir }}/pnpm-lock.yaml {{ frontend_dir }}/package.json
+        git commit -m "{{ frontend_update_commit_msg }}"
+    else
+        echo "frontend packages already up to date."
     fi
 
 # Run tsplib example script
