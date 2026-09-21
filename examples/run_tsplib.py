@@ -6,6 +6,7 @@ from tsp_bnb.branching_strategy import (
     MostFractionalBranchingStrategy,
 )
 from tsp_bnb.data_schema import TSPInstance
+from tsp_bnb.export import BnBSerializer
 from tsp_bnb.heuristics import NearestNeighborHeuristic, TwoOptImproved
 from tsp_bnb.open_nodes import OpenNodeQueue, best_bound_order
 from tsp_bnb.relaxation import LPRelaxation
@@ -103,6 +104,7 @@ def run_eil51():
     db = TspLibGraphInstanceDb()
     graph = db["eil51"]
     instance = TSPInstance(graph=graph, name="eil51")
+    serializer = BnBSerializer(instance)
 
     bnb = TSPBnb(
         instance=instance,
@@ -110,6 +112,7 @@ def run_eil51():
         node_queue=OpenNodeQueue(priority=best_bound_order),
         branching_strategy=MostFractionalBranchingStrategy(),
         root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
+        serializer=serializer,
     )
 
     solution = bnb.search(iteration_limit=10_000)
@@ -124,12 +127,16 @@ def run_eil51():
         f"BnB should return the optimal solution for eil51 (expected {optimal_cost}, got {solution.cost})"
     )
 
+    run_dir = bnb.save()
+    logger.info("Run exported to %s", run_dir)
+
 
 def run_st70():
     """st70: 70-city EUC_2D instance. Optimal tour cost = 675."""
     db = TspLibGraphInstanceDb()
     graph = db["st70"]
     instance = TSPInstance(graph=graph, name="st70")
+    serializer = BnBSerializer(instance)
 
     bnb = TSPBnb(
         instance=instance,
@@ -137,6 +144,7 @@ def run_st70():
         node_queue=OpenNodeQueue(priority=best_bound_order),
         branching_strategy=MostFractionalBranchingStrategy(),
         root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
+        serializer=serializer,
     )
 
     solution = bnb.search(iteration_limit=10_000)
@@ -151,11 +159,15 @@ def run_st70():
         f"BnB should return the optimal solution for st70 (expected {optimal_cost}, got {solution.cost})"
     )
 
+    run_dir = bnb.save()
+    logger.info("Run exported to %s", run_dir)
+
 
 def run_att48():
     db = TspLibGraphInstanceDb()
     graph = db["att48"]
     instance = TSPInstance(graph=graph, name="att48")
+    serializer = BnBSerializer(instance)
 
     bnb = TSPBnb(
         instance=instance,
@@ -163,6 +175,7 @@ def run_att48():
         node_queue=OpenNodeQueue(priority=best_bound_order),
         branching_strategy=MostFractionalBranchingStrategy(),
         root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
+        serializer=serializer,
     )
 
     solution = bnb.search(iteration_limit=10_000)
@@ -176,6 +189,9 @@ def run_att48():
     assert solution.cost == optimal_cost, (
         "BnB should return the optimal solution for att48"
     )
+
+    run_dir = bnb.save()
+    logger.info("Run exported to %s", run_dir)
     # assert bnb.progress_tracker.upper_bound() == 5, "The objective value should be 5."
     # assert bnb.progress_tracker.lower_bound() == 5, "The bound should be 5."
 

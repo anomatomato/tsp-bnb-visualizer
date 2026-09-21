@@ -31,11 +31,14 @@ class ProgressTracker:
         instance: TSPInstance,
         search_strategy: OpenNodeQueue,
         solutions: SolutionPool,
+        serializer: BnBSerializer | None = None,
     ) -> None:
+        """`serializer` is optional: pass None for search runs without export
+        (tests, benchmarks) — no SVG rendering, no output directories."""
         self._instance = instance
         self._search = search_strategy
         self._solutions = solutions
-        self._serializer = BnBSerializer(instance)
+        self._serializer = serializer
 
         self._start_time: datetime | None = None
         self.num_iterations = 0
@@ -53,7 +56,8 @@ class ProgressTracker:
     def on_new_node_in_tree(self, node: BnBNode) -> None:
         """Called whenever a new node is generated."""
         self._nodes_created += 1
-        self._serializer.on_new_node_in_tree(node, iteration=self.num_iterations)
+        if self._serializer is not None:
+            self._serializer.on_new_node_in_tree(node, iteration=self.num_iterations)
 
     def on_heuristic_solution(self, node: BnBNode, sol: TSPSolution) -> None:
         """Called when a heuristic finds a new feasible solution."""
@@ -63,23 +67,22 @@ class ProgressTracker:
         #     f"[Heuristic] node {node.node_id} -> new feasible solution {sol} (cost={sol.cost:.3f})"
         # )
 
-        self._serializer.on_heuristic_solution(
-            node,
-            sol,
-        )
+        if self._serializer is not None:
+            self._serializer.on_heuristic_solution(node, sol)
 
         self.on_feasible_solution(sol)
 
     def on_feasible_solution(self, sol: TSPSolution) -> None:
         """Called when a feasible solution is found (integral LP or heuristic)."""
-        if sol == self._solutions.best_solution():
+        if self._serializer is not None and sol == self._solutions.best_solution():
             self._serializer.on_best_solution_updated(
                 sol, iteration=self.num_iterations
             )
 
     def on_node_pruned(self, node: BnBNode, best_solution: TSPSolution | None) -> None:
         """Called whenever a node is pruned."""
-        self._serializer.on_node_pruned(node)
+        if self._serializer is not None:
+            self._serializer.on_node_pruned(node)
 
     def start_search(self) -> None:
         """Initialize search reporting and print header."""
@@ -112,12 +115,13 @@ class ProgressTracker:
             f"{status.value:>13} {node_lb:10.1f} {incumbent:10.1f} {global_lb:11.1f}"
         )
         # Visualization callback
-        self._serializer.on_node_processed(
-            self._current_node,
-            lb=global_lb,
-            ub=incumbent,
-            iteration=self.num_iterations,
-        )
+        if self._serializer is not None:
+            self._serializer.on_node_processed(
+                self._current_node,
+                lb=global_lb,
+                ub=incumbent,
+                iteration=self.num_iterations,
+            )
         # reset per-iteration data
         self._current_node = None
 

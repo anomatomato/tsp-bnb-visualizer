@@ -52,19 +52,42 @@ def test_solve_infeasible_when_node_degree_unsatisfiable(
 
 
 def test_cut_pool_grows_during_solve(
+    two_triangles_instance: TSPInstance,
+):
+    """SECs discovered by separation get added to the shared pool.
+
+    Degree-only LP on two triangles = two disconnected subtours; separation
+    must add the SEC. Pool grows to exactly 1: {0,1,2} and its complement
+    {3,4,5} canonicalize to the same cut.
+    """
+    pool = CutPool(nodes=two_triangles_instance.graph.nodes)
+    decisions = BranchingDecisions(two_triangles_instance.graph.number_of_edges())
+    solver = LPRelaxation(two_triangles_instance, decisions, cut_pool=pool)
+    assert len(pool) == 0, f"Pool should be empty before solve, got size {len(pool)}"
+    solver.solve()
+    assert len(pool) == 1, (
+        f"Pool should hold the one canonical SEC after solve, got {len(pool)}"
+    )
+
+
+def test_square_lp_is_integral_so_pool_stays_empty(
     square_instance: TSPInstance,
     fresh_pool: CutPool,
     empty_decisions: BranchingDecisions,
 ):
-    """SECs discovered by separation get added to the shared pool."""
+    """Square degree-only LP optimum is the perimeter tour (cost 4.0): integral
+    and connected, so separation finds nothing and no cuts are added."""
     solver = LPRelaxation(square_instance, empty_decisions, cut_pool=fresh_pool)
-    assert len(fresh_pool) == 0, (asdfjasd<t_/ý>,sdf
-        f"Pool should be empty before solve, got size {len(fresh_pool)}"
+    sol = solver.solve()
+    assert len(fresh_pool) == 0, (
+        f"Integral LP needs no SECs, but pool has {len(fresh_pool)} cuts"
     )
-    solver.solve()
-    # Square LP without cuts has a fractional solution with 2 subtours -> 2 cuts
-    assert len(fresh_pool) >= 1, (
-        f"Pool should have at least 1 cut after solve, got {len(fresh_pool)}"
+    assert sol.is_integral(), (
+        f"Square LP optimum should be the integral perimeter tour, "
+        f"got fractions {[round(v, 3) for v in sol.edge_fractions]}"
+    )
+    assert sol.lower_bound == pytest.approx(4.0), (
+        f"Square optimum is 4.0, got {sol.lower_bound}"
     )
 
 

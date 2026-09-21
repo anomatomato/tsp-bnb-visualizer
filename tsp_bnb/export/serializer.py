@@ -45,7 +45,7 @@ class BnBSerializer:
         # Run directory paths (computed upfront, created lazily on first render).
         # Computing paths here keeps the types as Path (not Path | None), so
         # render calls stay clean — no Optional unwrapping needed.
-        ts = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
+        ts = datetime.now().astimezone().strftime("%Y-%m-%dT%H-%M-%S")
         self._run_dir: Path = self._output_root / "runs" / f"run_{instance.name}_{ts}"
         self._images_dir: Path = self._run_dir / "images"
         self._dirs_created: bool = False
@@ -190,8 +190,8 @@ class BnBSerializer:
 
     # --- Final save ---
 
-    def save(self) -> Path:
-        """Write bnb_state.json + index.html, auto-open browser. Return run dir."""
+    def save(self, *, open_browser: bool = True) -> Path:
+        """Write bnb_state.json + index.html, optionally open browser. Return run dir."""
         if self._root is None:
             raise ValueError("No nodes to serialize.")
 

@@ -14,11 +14,13 @@ This module provides the BnB solver with four interchangeable components:
 """
 
 import logging
+from pathlib import Path
 
 from .bnb_nodes import BnBNode, NodeFactory, NodeStatus
 from .branching_strategy import BranchingStrategy
 from .cut_pool import CutPool
 from .data_schema import TSPInstance, TSPSolution
+from .export import BnBSerializer
 from .heuristics import Heuristics
 from .open_nodes import OpenNodeQueue
 from .progress_tracker import ProgressTracker
@@ -51,6 +53,7 @@ class TSPBnb:
         node_queue: OpenNodeQueue,
         branching_strategy: BranchingStrategy,
         root_heuristics: Heuristics,
+        serializer: BnBSerializer | None = None,
     ):
         # Core attributes
         self.instance = instance
@@ -62,7 +65,10 @@ class TSPBnb:
         # Data structures for solutions and progress tracking
         self.solutions = SolutionPool()
         self.cut_pool = CutPool(instance.graph.nodes)
-        self.progress_tracker = ProgressTracker(instance, node_queue, self.solutions)
+        self.serializer = serializer
+        self.progress_tracker = ProgressTracker(
+            instance, node_queue, self.solutions, serializer=serializer
+        )
 
         # Factory to create tree nodes, with callback on new node
         self.node_factory = NodeFactory(
@@ -184,3 +190,23 @@ class TSPBnb:
 
         self.progress_tracker.end_search()
         return self.solutions.best_solution()
+
+    def save(self, *, open_browser: bool = True) -> Path:
+        """Export the run: bnb_state.json + index.html + images.
+
+        Requires TSPBnb(..., serializer=BnBSerializer(instance)) — the
+        serializer collects tree events during search(), so it cannot be
+        created retroactively here.
+
+        Args:
+            open_browser: open the run's index.html in a browser tab after saving.
+
+        Returns:
+            The run directory containing the exported artifacts.
+        """
+        if self.serializer is None:
+            raise RuntimeError(
+                "No serializer attached: construct TSPBnb with "
+                "serializer=BnBSerializer(instance) to enable export."
+            )
+        return self.serializer.save(open_browser=open_browser)
