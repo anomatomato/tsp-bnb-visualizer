@@ -13,6 +13,9 @@ python_update_commit_msg := "chore(deps): update python packages"
 frontend_dir := "frontend"
 frontend_update_commit_msg := "chore(deps): update frontend packages"
 
+# frontend tool binaries (json2ts, …) for recipes that shell out to Node
+export PATH := "frontend/node_modules/.bin:" + env("PATH")
+
 # Install python dependencies
 install:
     uv sync --all-packages --all-extras --all-groups
@@ -21,12 +24,20 @@ install:
 pre_commit_setup:
     uv run pre-commit install
 
-# Install python dependencies and pre-commit hooks
-setup: install pre_commit_setup
+# Install frontend dependencies
+frontend_install:
+    pnpm -C {{ frontend_dir }} install
+
+# Install python + frontend dependencies and pre-commit hooks
+setup: install pre_commit_setup frontend_install
 
 # Run pytest
 test:
     uv run pytest
+
+# Regenerate frontend types from Pydantic export models
+types:
+    uv run python -m scripts.generate_types
 
 # Cleanup run artifacts
 clean:

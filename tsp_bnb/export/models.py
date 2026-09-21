@@ -59,7 +59,7 @@ class NodeVisData(BaseModel):
         default=None,
         description="The upper bound of the node from the heuristic solution. May also be None if there is no heuristic solution or it got pruned.",
     )
-    depth: int = 0
+    depth: int
     created_at: int = Field(..., description="The iteration when the node was created.")
     processed_at: int | None = Field(
         default=None,

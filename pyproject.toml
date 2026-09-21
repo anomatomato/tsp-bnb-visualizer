@@ -23,6 +23,7 @@ lint = [
   "pyrefly>=1.1.1",
 ]
 types = [
+  "pydantic-to-typescript>=2.0.0",
   "types-networkx>=3.6.1.20260724",
 ]
 
