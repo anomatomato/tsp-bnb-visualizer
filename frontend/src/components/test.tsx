@@ -6,7 +6,7 @@ export const TestComponent = () => {
       <button
         data-active
         popoverTarget="my-popover"
-        className="border data-active:border-purple-500"
+        className="border bg-primary text-primary-foreground data-active:border-purple-500"
       >
         Check for updates
       </button>

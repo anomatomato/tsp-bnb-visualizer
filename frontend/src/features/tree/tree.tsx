@@ -1,29 +1,37 @@
+import { useTheme } from "@/components/theme-provider"
+import { toReactFlow } from "@/lib/bnb"
+import { layoutTree } from "@/lib/layout"
+import runJson from "@/mock/eil51/bnb_state.json"
+import type { BnBRunData } from "@/types/api-types"
 import {
   Background,
   ControlButton,
   Controls,
   MiniMap,
   ReactFlow,
-  useEdgesState,
   useNodesState,
   type MiniMapNodeProps,
 } from "@xyflow/react"
-import "@xyflow/react/dist/style.css"
-import { initialEdges, initialNodes, nodeTypes } from "./nodes"
+import { nodeTypes } from "./nodes"
+
+// tsc infers JSON string fields as `string`, not the generated literal
+// unions — one typed cast at the boundary keeps toReactFlow type-safe.
+const run = runJson as BnBRunData
+const { nodes: rawNodes, edges } = toReactFlow(run)
+const initialNodes = layoutTree(rawNodes, edges)
 
 export function BnBTree() {
+  const { theme } = useTheme()
   const [nodes, , onNodesChange] = useNodesState(initialNodes)
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges)
 
   return (
-    <div style={{ height: "100%", width: "100%" }}>
+    <div className="size-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
         nodeTypes={nodeTypes}
-        colorMode="system"
+        colorMode={theme}
         fitView
       >
         <MiniMap nodeComponent={MiniMapNode} pannable zoomable />
@@ -41,14 +49,5 @@ export function BnBTree() {
 }
 
 function MiniMapNode({ x, y }: MiniMapNodeProps) {
-  return (
-    <circle
-      cx={x}
-      cy={y}
-      r="30"
-      fill="#7c2ff7"
-      className="fill-pink-500"
-      opacity={0.5}
-    />
-  )
+  return <circle cx={x} cy={y} r="30" className="fill-pink-500 opacity-50" />
 }
