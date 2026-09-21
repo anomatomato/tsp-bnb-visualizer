@@ -191,6 +191,29 @@ Rules:
 - shadcn components' internal fine-grained values (`gap-1.5`, `h-8`, `size-3.5`) belong to their own design system and stay untouched.
 - Typography has a smaller perceptual floor — the 25% rule applies to spacing/sizing, not to the type scale.
 
+### Color & opacity conventions
+
+**Two layers.** shadcn's semantic tokens (`background`, `primary`, `destructive`, `muted`, …) cover all UI chrome. Tailwind's raw color ramps (`bg-emerald-600`, `text-amber-500`) are for one-off decoration only. A color that starts _meaning_ something (third use, or domain semantics) gets promoted to its own token with a `.dark` twin — see `--warning` for the pattern.
+
+**Opacity vocabulary** (derive shades at use time, don't define shade tokens):
+
+| Opacity        | Role                                                | Example                              |
+| -------------- | --------------------------------------------------- | ------------------------------------ |
+| `/10`–`/20`    | tinted container (soft surface, full-strength text) | `bg-destructive/10 text-destructive` |
+| `/50` (+`/20`) | focus/attention ring                                | `focus-visible:ring-ring/50`         |
+| `/80`          | hover state                                         | `hover:bg-primary/80`                |
+| `/30`–`/70`    | de-emphasis steps                                   | `opacity-30` for dimmed nodes        |
+
+Stick to this set (`10 20 30 50 80`) rather than arbitrary values. Alpha blends with the surface beneath, so one class works in light and dark mode.
+
+**Anchor-strength rule:** every token is defined once at its strongest _needed_ value (full chroma, still legible as text on `--background`), and every softer variant is an opacity modifier of it. Never define a shade ramp as separate tokens.
+
+**Dark-mode derivation:** same H, raise L (+0.08–0.12), cut C (~×0.6). Keep hue constant so a color reads as the same color in both themes.
+
+**Categorical/status families** (e.g. `--bnb-status-*`): fix one L across all members (equal perceived brightness, none pops unfairly), sweep H per member; neutral members may alias existing tokens (`var(--muted-foreground)`).
+
+**Data-visualization surfaces** (tree nodes): fill = status token at `/10`–`/20`, stroke = status token full strength, label text = `--foreground` (never the status color — readability first). SVG works with the same utilities: `fill-(--bnb-status-x)/20`, `stroke-(--bnb-status-x)`.
+
 ---
 
 ## Data Flow (static only)

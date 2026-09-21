@@ -63,6 +63,7 @@ decisions.fix(edge_index_of(graph.edges, 0, 1), 1)  # NOT decisions.fix((0, 1), 
 - TypeScript path alias `@/` → `src/` is configured in BOTH `frontend/tsconfig.app.json` (paths) and `frontend/vite.config.ts` (resolve.alias). Changing one without the other breaks either the type checker or the bundler.
 - React Flow: `nodeTypes`/`edgeTypes` maps at **module scope**, never inline in a component.
 - Theming: shadcn CSS-variable tokens in `index.css` (`:root`/`.dark`), toggled by `components/theme-provider.tsx`; React Flow gets `colorMode={resolvedTheme}`.
+- Colors: UI chrome uses the existing shadcn tokens only; raw Tailwind ramps (`bg-emerald-600` …) for one-off decoration. Colors that carry meaning become tokens (`--bnb-status-*`, `--warning`) with a `.dark` twin (same H, +L, ×~0.6 C). Tokens are defined at anchor strength; all softer variants are opacity modifiers from the fixed set `10 20 30 50 80` (`/10`–`/20` tinted surface, `/50` ring, `/80` hover, `/30`–`/70` de-emphasis). Full rules in ARCHITECTURE.md "Color & opacity conventions".
 - pre-commit: the root `prettier` hook excludes `frontend/`; the `prettier-frontend` hook runs frontend's own prettier via `scripts/prettier-frontend.sh` (requires `pnpm -C frontend install`).
 - Never track Vite's `.vite/` dependency cache.
 
