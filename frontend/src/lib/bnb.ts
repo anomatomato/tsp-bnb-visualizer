@@ -3,6 +3,7 @@ import type { Edge, Node } from "@xyflow/react"
 
 export type BnBNodeData = {
   node: Omit<NodeVisData, "children"> // full detail, children stripped (flattened structure)
+  dimmed?: boolean
 }
 
 export type BnBFlowNode = Node<BnBNodeData, "bnb">

@@ -191,3 +191,7 @@
     @apply font-sans;
   }
 }
+
+.react-flow__attribution {
+  visibility: hidden;
+}

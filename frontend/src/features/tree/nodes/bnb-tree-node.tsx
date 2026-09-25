@@ -5,12 +5,12 @@ import type { CSSProperties } from "react"
 import { useState } from "react"
 
 const statusClasses: Record<NodeStatus, string> = {
-  Feasible: "bg-bnb-status-feasible/20 border-bnb-status-feasible",
-  Infeasible: "bg-bnb-status-infeasible/20 border-bnb-status-infeasible",
-  Branched: "bg-bnb-status-branched/20 border-bnb-status-branched",
-  Pruned: "bg-bnb-status-pruned/20 border-bnb-status-pruned",
-  Enqueued: "bg-bnb-status-enqueued/20 border-bnb-status-enqueued",
-  Unknown: "bg-muted/20 border-muted-foreground",
+  Feasible: "bg-bnb-status-feasible/30 border-bnb-status-feasible",
+  Infeasible: "bg-bnb-status-infeasible/30 border-bnb-status-infeasible",
+  Branched: "bg-bnb-status-branched/30 border-bnb-status-branched",
+  Pruned: "bg-bnb-status-pruned/30 border-bnb-status-pruned",
+  Enqueued: "bg-bnb-status-enqueued/30 border-bnb-status-enqueued",
+  Unknown: "bg-muted/30 border-muted-foreground",
 }
 
 const invisibleHandle = {
@@ -37,18 +37,17 @@ export function BnBTreeNode({
   return (
     <>
       <NodeToolbar isVisible={tooltipVisible} position={Position.Top}>
-        <button>delete</button>
-        <button>copy</button>
-        <button>expand</button>
+        {node.lb?.toFixed(1)} - {node.ub} - {node.status}
       </NodeToolbar>
       <div
-        className={`flex h-12 w-12 place-content-center rounded-full text-xs text-foreground select-none ${statusClasses[node.status]}`}
-        title={`#${node.node_id} · ${node.status}`}
+        className={`flex h-12 w-12 flex-col place-content-center items-center gap-0 rounded-full text-[14px] text-foreground ${statusClasses[node.status]} ${data.dimmed ? "opacity-30" : ""}`}
+        // title={`#${node.node_id} · ${node.status}`}
         // className="react-flow__node-default"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {node.lb !== null && node.lb !== undefined ? node.lb.toFixed(1) : "-"}
+        <span className="font-bold">{node.processed_at ?? "-"}</span>
+        <span>{node.relaxed_solution?.objective.toFixed(1) ?? "-"}</span>
       </div>
       {/* Handles stay mounted (edges anchor to them) but invisible */}
       <Handle

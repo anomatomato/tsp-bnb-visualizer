@@ -12,19 +12,20 @@ const nodeDiameter = 48
 export function layoutTree<N extends Node>(
   nodes: N[],
   edges: Edge[],
-  direction: "LR" | "TB" = "LR",
-  /** Number of pixels between each rank in the layout */
-  ranksep: number = nodeDiameter
-): N[] {
+  direction: "LR" | "TB" = "TB"
+) {
   const g = new dagre.graphlib.Graph<GraphLabel, NodeLabel, EdgeLabel>()
 
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: direction, ranksep, nodesep: 32 })
+  g.setGraph({ rankdir: direction, nodesep: 36, ranksep: 48 })
 
   const isHorizontal = direction === "LR"
 
   for (const n of nodes) {
-    g.setNode(n.id, { width: nodeDiameter, height: nodeDiameter }) // node size
+    g.setNode(n.id, {
+      width: nodeDiameter,
+      height: nodeDiameter,
+    }) // node size
   }
   for (const e of edges) {
     g.setEdge(e.source, e.target)
