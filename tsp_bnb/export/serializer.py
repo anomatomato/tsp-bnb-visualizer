@@ -80,30 +80,48 @@ class BnBSerializer:
         data.status = node.status
         # Per-edge fixation state for frontend tooltips
         data.fixed_edges = list(node.branching_decisions)
+        self._record_relaxed_snapshot(data, node)
 
-        if not node.relaxed_solution.is_infeasible():
-            filename = f"relaxation_{node.node_id}.svg"
-            self._ensure_dirs()
-            render_lp_solution(
-                self._instance,
-                self.positions,
-                list(node.relaxed_solution.edge_fractions),
-                self._images_dir / filename,
-            )
-            data.relaxed_solution = RelaxedSnapshot(
-                edge_fractions=node.relaxed_solution.edge_fractions,
-                objective=node.relaxed_solution.objective_value,
-                is_integral_tour=node.relaxed_solution.is_feasible_tour(),
-                image_path=f"images/{filename}",
-            )
+    def _record_relaxed_snapshot(self, data: NodeVisData, node: BnBNode) -> None:
+        """Store the node's LP relaxation snapshot (and render its SVG).
+
+        Shared by processed and pruned nodes: the creation-time LP is a real
+        bound for queue leftovers too (it ordered the best-bound heap), so the
+        snapshot is honest data for both. Infeasible relaxations get no
+        snapshot — there are no fractions worth showing.
+        """
+        if node.relaxed_solution.is_infeasible():
+            return
+        filename = f"relaxation_{node.node_id}.svg"
+        self._ensure_dirs()
+        render_lp_solution(
+            self._instance,
+            self.positions,
+            list(node.relaxed_solution.edge_fractions),
+            self._images_dir / filename,
+        )
+        data.relaxed_solution = RelaxedSnapshot(
+            edge_fractions=node.relaxed_solution.edge_fractions,
+            objective=node.relaxed_solution.objective_value,
+            is_integral_tour=node.relaxed_solution.is_feasible_tour(),
+            image_path=f"images/{filename}",
+        )
 
     def on_node_pruned(
         self,
         node: BnBNode,
     ) -> None:
-        """Called when a node is pruned. Mark status as pruned."""
+        """Called when a queue-leftover node is pruned (global prune at end).
+
+        These nodes were never processed, so no processing bookkeeping applies:
+        no processing_order entry, no processed_at, no ub. Their creation-time
+        LP is still real data — record fixed edges and the relaxed snapshot so
+        the inspector can show what the search skipped.
+        """
         data = self._node_data[node.node_id]
         data.status = node.status  # NodeStatus.PRUNED
+        data.fixed_edges = list(node.branching_decisions)
+        self._record_relaxed_snapshot(data, node)
 
     def on_heuristic_solution(
         self,
