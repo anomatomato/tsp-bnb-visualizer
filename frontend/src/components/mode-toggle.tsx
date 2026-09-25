@@ -1,5 +1,5 @@
 import { cn } from "cn"
-import { Monitor, Moon, Sun } from "lucide-react"
+import { Check, Monitor, Moon, Sun } from "lucide-react"
 
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
@@ -35,13 +35,15 @@ export function ModeToggle() {
       />
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme("light")}>
-          <Sun /> Light
+          <Sun /> Light {theme === "light" && <Check className="ml-auto" />}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("dark")}>
           <Moon /> Dark
+          {theme === "dark" && <Check className="ml-auto" />}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("system")}>
           <Monitor /> System
+          {theme === "system" && <Check className="ml-auto" />}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
