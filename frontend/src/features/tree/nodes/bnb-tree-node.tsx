@@ -3,15 +3,7 @@ import type { NodeStatus } from "@/types/api-types"
 import { Handle, NodeToolbar, Position, type NodeProps } from "@xyflow/react"
 import type { CSSProperties } from "react"
 import { useState } from "react"
-
-const statusClasses: Record<NodeStatus, string> = {
-  Feasible: "bg-bnb-status-feasible/30 border-bnb-status-feasible",
-  Infeasible: "bg-bnb-status-infeasible/30 border-bnb-status-infeasible",
-  Branched: "bg-bnb-status-branched/30 border-bnb-status-branched",
-  Pruned: "bg-bnb-status-pruned/30 border-bnb-status-pruned",
-  Enqueued: "bg-bnb-status-enqueued/30 border-bnb-status-enqueued",
-  Unknown: "bg-muted/30 border-muted-foreground",
-}
+import { statusNodeClasses } from "@/lib/status"
 
 const invisibleHandle = {
   opacity: 0, // Hide handles
@@ -35,16 +27,17 @@ export function BnBTreeNode({
   const { node } = data
 
   return (
-    <>
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
       <NodeToolbar isVisible={tooltipVisible} position={Position.Top}>
         {node.lb?.toFixed(1)} - {node.ub} - {node.status}
       </NodeToolbar>
       <div
-        className={`flex h-12 w-12 flex-col place-content-center items-center gap-0 rounded-full text-[14px] text-foreground ${statusClasses[node.status]} ${data.dimmed ? "opacity-30" : ""}`}
+        className={`flex h-12 w-12 flex-col place-content-center items-center gap-0 rounded-full text-[14px] text-foreground ${statusNodeClasses[node.status]} ${data.dimmed ? "opacity-30" : ""}`}
         // title={`#${node.node_id} · ${node.status}`}
         // className="react-flow__node-default"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
         <span className="font-bold">{node.processed_at ?? "-"}</span>
         <span>{node.relaxed_solution?.objective.toFixed(1) ?? "-"}</span>
@@ -60,6 +53,6 @@ export function BnBTreeNode({
         position={sourcePosition ?? Position.Right}
         style={invisibleHandle}
       />
-    </>
+    </div>
   )
 }

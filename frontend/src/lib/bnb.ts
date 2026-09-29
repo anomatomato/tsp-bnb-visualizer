@@ -1,22 +1,25 @@
 import type { BnBRunData, NodeVisData } from "@/types/api-types"
 import type { Edge, Node } from "@xyflow/react"
 
-export type BnBNodeData = {
-  node: Omit<NodeVisData, "children"> // full detail, children stripped (flattened structure)
+/** a tree node with its recursive `children` stripped - the flat form */
+export type FlatNode = Omit<NodeVisData, "children">
+
+export type BnBFlowNodeData = {
+  node: FlatNode
   dimmed?: boolean
 }
 
-export type BnBFlowNode = Node<BnBNodeData, "bnb">
+export type BnBFlowNode = Node<BnBFlowNodeData, "bnb">
 
 /** recursive tree -> flat list of (node, parentId), DFS order */
 export function flattenTree(
   node: NodeVisData,
-  parentId: number | null = null,
-  acc: Array<{ node: NodeVisData; parentId: number | null }> = []
-): Array<{ node: NodeVisData; parentId: number | null }> {
-  acc.push({ node, parentId })
+  acc: FlatNode[] = []
+): FlatNode[] {
+  const { children: _children, ...rest } = node
+  acc.push(rest)
   for (const child of node.children ?? []) {
-    flattenTree(child, child.parent_id, acc)
+    flattenTree(child, acc)
   }
   return acc
 }
@@ -26,25 +29,37 @@ export function toReactFlow(run: BnBRunData): {
   edges: Edge[]
 } {
   const flat = flattenTree(run.tree)
-  const nodes: BnBFlowNode[] = flat.map(({ node }) => {
-    const { children: _children, ...rest } = node
+  const nodes: BnBFlowNode[] = flat.map((node) => {
     return {
       id: String(node.node_id),
       type: "bnb",
       position: { x: 0, y: 0 }, // dagre fills this
-      data: { node: rest },
+      data: { node },
     }
   })
 
   const edges: Edge[] = flat
-    .filter(({ parentId }) => parentId !== null)
-    .map(({ node, parentId }) => {
+    .filter((node) => node.parent_id !== null)
+    .map((node) => {
       return {
-        id: `e${parentId}-${node.node_id}`,
-        source: String(parentId),
+        id: `e${node.parent_id}-${node.node_id}`,
+        source: String(node.parent_id),
         target: String(node.node_id),
       }
     })
 
   return { nodes, edges }
+}
+
+export function toNodeMap(
+  run: BnBRunData
+): Map<number, Omit<NodeVisData, "children">> {
+  const map = new Map(flattenTree(run.tree).map((node) => [node.node_id, node]))
+  return map
+}
+
+export function incumbentAt(run: BnBRunData, iteration: number) {
+  return (
+    run.best_solutions.filter((s) => s.iteration <= iteration).at(-1) ?? null
+  )
 }

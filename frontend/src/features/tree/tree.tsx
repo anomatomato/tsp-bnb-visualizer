@@ -1,9 +1,9 @@
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import { toReactFlow, type BnBFlowNode } from "@/lib/bnb"
-import { layoutTree } from "@/lib/layout"
+import { layoutTree, type Direction } from "@/lib/layout"
 import runJson from "@/mock/eil51/bnb_state.json"
-import type { BnBRunData } from "@/types/api-types"
+import type { BnBRunData, NodeStatus } from "@/types/api-types"
 import {
   Background,
   ControlButton,
@@ -19,6 +19,8 @@ import {
 import { ArrowDownUp, ArrowLeftRight } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { nodeTypes } from "./nodes"
+import { statusLegendClasses } from "@/lib/status"
+import { Card, CardContent } from "@/components/ui/card"
 
 interface BnBTreeProps {
   iteration: number
@@ -31,9 +33,11 @@ const { nodes: initialNodes, edges: initialEdges } = toReactFlow(run)
 // layouts are pure functions of the static mock — precompute both once,
 // toggling direction is then a zero-cost array swap
 const layouts = {
-  TB: layoutTree(initialNodes, initialEdges, "TB"),
-  LR: layoutTree(initialNodes, initialEdges, "LR"),
+  TB: layoutTree(initialNodes, initialEdges, "TB", 30, 42),
+  LR: layoutTree(initialNodes, initialEdges, "LR", 8, 96),
 } as const
+
+const statuses = Object.keys(statusLegendClasses)
 
 export function BnBTree({ iteration }: BnBTreeProps) {
   return (
@@ -46,7 +50,7 @@ export function BnBTree({ iteration }: BnBTreeProps) {
 function BnBTreeCanvas({ iteration }: BnBTreeProps) {
   const { theme } = useTheme()
   const [nodes, setNodes, onNodesChange] = useNodesState(layouts.TB)
-  const [direction, setDirection] = useState<"LR" | "TB">("TB")
+  const [direction, setDirection] = useState<Direction>("TB")
   const { fitView } = useReactFlow<BnBFlowNode>()
 
   const finalNodes: BnBFlowNode[] = useMemo(() => {
@@ -68,7 +72,7 @@ function BnBTreeCanvas({ iteration }: BnBTreeProps) {
   }, [nodes, iteration])
 
   const onToggleLayout = useCallback(() => {
-    const next = direction === "TB" ? "LR" : "TB"
+    const next: Direction = direction === "TB" ? "LR" : "TB"
     setDirection(next)
     setNodes(layouts[next])
     requestAnimationFrame(() => fitView({ duration: 0 }))
@@ -92,6 +96,23 @@ function BnBTreeCanvas({ iteration }: BnBTreeProps) {
           {direction === "TB" ? <ArrowLeftRight /> : <ArrowDownUp />}
         </ControlButton>
       </Controls>
+      <Panel position="top-left" className="flex flex-col">
+        <Card>
+          <CardContent>
+            <ul>
+              {statuses.map((status) => (
+                <li key={status} className="flex items-center gap-2">
+                  <span
+                    className={`size-3 rounded-full ${statusLegendClasses[status]}`}
+                  ></span>
+                  <span>{status}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-muted-foreground">label: LP bound</p>
+          </CardContent>
+        </Card>
+      </Panel>
       <Panel position="top-right">
         {/* label/icon shows the direction you will switch TO */}
         <Button
@@ -108,5 +129,12 @@ function BnBTreeCanvas({ iteration }: BnBTreeProps) {
 }
 
 function MiniMapNode({ x, y }: MiniMapNodeProps) {
-  return <circle cx={x} cy={y} r="30" className="fill-pink-500 opacity-50" />
+  return (
+    <circle
+      cx={x}
+      cy={y}
+      r="30"
+      className="fill-pink-500 opacity-50 dark:fill-pink-500"
+    />
+  )
 }

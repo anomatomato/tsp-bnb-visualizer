@@ -1,13 +1,11 @@
 /**
 /* This file was automatically generated from pydantic models by running pydantic2ts.
-/* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
 /**
  * Status of the node in the visualization.
  */
-export type NodeStatus =
-  "Feasible" | "Infeasible" | "Enqueued" | "Pruned" | "Branched" | "Unknown"
+export type NodeStatus = "Feasible" | "Infeasible" | "Pruned" | "Branched"
 
 /**
  * One entry in the global best-solutions timeline.
@@ -16,7 +14,7 @@ export interface BestSolutionEntry {
   iteration: number
   cost: number
   edge_selection: number[]
-  image_path?: string | null
+  image_path: string | null
 }
 /**
  * Top-level JSON structure written to bnb_state.json.
@@ -66,11 +64,11 @@ export interface NodeVisData {
   /**
    * The lower bound from the relaxed solution. May also be None if it got pruned.
    */
-  lb?: number | null
+  lb: number | null
   /**
    * The upper bound of the node from the heuristic solution. May also be None if there is no heuristic solution or it got pruned.
    */
-  ub?: number | null
+  ub: number | null
   depth: number
   /**
    * The iteration when the node was created.
@@ -79,18 +77,18 @@ export interface NodeVisData {
   /**
    * The iteration when the node was processed. This may be later than its creation time. It may also be None if it got pruned.
    */
-  processed_at?: number | null
+  processed_at: number | null
   status: NodeStatus
-  relaxed_solution?: RelaxedSnapshot | null
-  heuristic_solution?: TourSnapshot | null
+  relaxed_solution: RelaxedSnapshot | null
+  heuristic_solution: TourSnapshot | null
   /**
    * Per-edge branching state: None = free, 0 = fixed out, 1 = fixed in. Enables frontend tooltips showing why x_ij is 0/1 (LP choice vs branching fixation)
    */
-  fixed_edges?: (0 | 1 | null)[] | null
+  fixed_edges: (0 | 1 | null)[] | null
   /**
    * Children of the node.
    */
-  children?: NodeVisData[]
+  children: NodeVisData[]
 }
 /**
  * LP relaxation at a node: raw data + rendered SVG reference.
@@ -99,7 +97,7 @@ export interface RelaxedSnapshot {
   edge_fractions: number[]
   objective: number
   is_integral_tour: boolean
-  image_path?: string | null
+  image_path: string | null
 }
 /**
  * A feasible tour: raw data + rendered SVG reference.
@@ -107,5 +105,5 @@ export interface RelaxedSnapshot {
 export interface TourSnapshot {
   edge_selection: number[]
   cost: number
-  image_path?: string | null
+  image_path: string | null
 }

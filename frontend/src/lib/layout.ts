@@ -9,15 +9,19 @@ import type { Edge, Node } from "@xyflow/react"
 
 const nodeDiameter = 48
 
+export type Direction = "LR" | "TB"
+
 export function layoutTree<N extends Node>(
   nodes: N[],
   edges: Edge[],
-  direction: "LR" | "TB" = "TB"
+  direction: Direction = "TB",
+  nodesep: number | undefined = undefined,
+  ranksep: number | undefined = undefined
 ) {
   const g = new dagre.graphlib.Graph<GraphLabel, NodeLabel, EdgeLabel>()
 
   g.setDefaultEdgeLabel(() => ({}))
-  g.setGraph({ rankdir: direction, nodesep: 36, ranksep: 48 })
+  g.setGraph({ rankdir: direction, nodesep: nodesep, ranksep: ranksep })
 
   const isHorizontal = direction === "LR"
 
