@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
-import { Pause, Play } from "lucide-react"
-import { type Dispatch, type SetStateAction, useEffect, useState } from "react"
+import { Minus, Pause, Play, Plus, SkipBack, SkipForward } from "lucide-react"
+import { type Dispatch, type SetStateAction } from "react"
+import { usePlayback } from "./hooks/use-playback"
 
 interface TimeLineProps {
   iteration: number
@@ -10,46 +11,68 @@ interface TimeLineProps {
 }
 
 export function TimeLine({ iteration, max, setIteration }: TimeLineProps) {
-  // play: setInterval 500ms advancing until max; clear on unmount/pause/end
-  const [isPlaying, setIsPlaying] = useState(false)
+  const { isPlaying, togglePlay, prev, next, jumpToFirst, jumpToLast } =
+    usePlayback(iteration, max, setIteration)
 
-  if (isPlaying && iteration >= max) {
-    setIsPlaying(false)
-  }
-
-  useEffect(() => {
-    if (!isPlaying) return
-
-    const id = setInterval(() => {
-      setIteration((prev) => Math.min(prev + 1, max))
-    }, 400)
-
-    return () => clearInterval(id)
-  }, [max, isPlaying, setIteration])
-
-  function handleClick() {
-    const nextIsPlaying = !isPlaying
-    setIsPlaying(nextIsPlaying)
-  }
+  const isFirstIteration = iteration <= 1
+  const isLastIteration = iteration >= max
 
   return (
-    <div className="flex flex-row items-center gap-2">
-      <Button size="icon" onClick={handleClick}>
-        {isPlaying ? <Pause /> : <Play />}
-      </Button>
-      <Slider
-        value={[iteration]}
-        onValueChange={(v: number | readonly number[]) => {
-          setIteration(Array.isArray(v) ? v[0] : v)
-        }}
-        min={1}
-        max={max}
-        step={1}
-        className="max-w-md"
-      />
-      <span className="font-mono text-sm tabular-nums">
-        {iteration}/{max}
-      </span>
+    <div className="flex w-full flex-col items-center justify-center gap-2">
+      {/* Row 1: slider + count, sharing one line */}
+      <div className="flex w-full max-w-md items-center gap-3">
+        <Slider
+          value={[iteration]}
+          onValueChange={(v: number | readonly number[]) => {
+            setIteration(Array.isArray(v) ? v[0] : v)
+          }}
+          min={1}
+          max={max}
+          step={1}
+        />
+        <span className="shrink-0 font-mono text-sm text-muted-foreground tabular-nums">
+          {iteration}/{max}
+        </span>
+      </div>
+
+      {/* Row 2: transport controls */}
+      <div className="flex items-center gap-1">
+        <Button
+          size="icon-lg"
+          variant="ghost"
+          disabled={isFirstIteration}
+          onClick={jumpToFirst}
+        >
+          <SkipBack />
+        </Button>
+        <Button
+          onClick={prev}
+          size="icon-lg"
+          disabled={isFirstIteration}
+          variant="secondary"
+        >
+          <Minus />
+        </Button>
+        <Button size="icon-lg" onClick={togglePlay} disabled={isLastIteration}>
+          {isPlaying ? <Pause /> : <Play />}
+        </Button>
+        <Button
+          size="icon-lg"
+          variant="secondary"
+          disabled={isLastIteration}
+          onClick={next}
+        >
+          <Plus />
+        </Button>
+        <Button
+          size="icon-lg"
+          variant="ghost"
+          disabled={isLastIteration}
+          onClick={jumpToLast}
+        >
+          <SkipForward />
+        </Button>
+      </div>
     </div>
   )
 }
