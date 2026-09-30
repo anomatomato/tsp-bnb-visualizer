@@ -9,14 +9,10 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { type FlatNode, incumbentAt } from "@/lib/bnb"
+import { type FlatNode } from "@/lib/bnb"
 import { resolveImage } from "@/lib/images"
-import type {
-  BestSolutionEntry,
-  BnBRunData,
-  NodeStatus,
-} from "@/types/api-types"
-import { statusBadgeClasses } from "@/lib/status"
+import type { BestSolutionEntry } from "@/types/api-types"
+import { statusBadgeClass } from "@/lib/status"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface InspectorProps {
@@ -37,8 +33,8 @@ export default function Inspector({ node, incumbent }: InspectorProps) {
     <ScrollArea>
       <div className="flex flex-col gap-4 p-4 text-sm">
         <header className="flex items-center gap-3">
-          <Badge className={`${statusBadgeClasses[node.status]}`}>
-            {node.status}
+          <Badge className={`${statusBadgeClass(node.status)}`}>
+            {node.status ?? "never processed"}
           </Badge>
           <span>
             #{node.node_id} · depth {node.depth}

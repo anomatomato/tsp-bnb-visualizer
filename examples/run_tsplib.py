@@ -99,7 +99,7 @@ def run_pentagon5():
     logger.info("Best cost: %s", solution.cost)
 
 
-def run_eil51():
+def run_eil51(*, open_browser: bool = True):
     """eil51: 51-city EUC_2D instance. Optimal tour cost = 426."""
     db = TspLibGraphInstanceDb()
     graph = db["eil51"]
@@ -127,8 +127,9 @@ def run_eil51():
         f"BnB should return the optimal solution for eil51 (expected {optimal_cost}, got {solution.cost})"
     )
 
-    run_dir = bnb.save()
+    run_dir = bnb.save(open_browser=open_browser)
     logger.info("Run exported to %s", run_dir)
+    return run_dir
 
 
 def run_st70():
@@ -197,9 +198,9 @@ def run_att48():
 
 
 def main():
-    # run_eil51()
+    run_eil51()
     run_st70()
-    # run_att48()
+    run_att48()
 
 
 if __name__ == "__main__":

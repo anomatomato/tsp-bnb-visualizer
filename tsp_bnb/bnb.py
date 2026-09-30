@@ -92,12 +92,12 @@ class TSPBnb:
         # 1. Infeasibility prune
         if sol.is_infeasible():
             node.status = NodeStatus.INFEASIBLE
-            return node.status
+            return NodeStatus.INFEASIBLE
 
         # 2. Bound-based prune: no better solution possible
         if sol.lower_bound >= self.solutions.best_solution_value():
             node.status = NodeStatus.PRUNED
-            return node.status
+            return NodeStatus.PRUNED
 
         # 3. Feasible solution found: integral
         if sol.is_integral():
@@ -111,12 +111,12 @@ class TSPBnb:
                 self.solutions.add(feasible_sol)
                 self.progress_tracker.on_feasible_solution(feasible_sol)
                 node.status = NodeStatus.FEASIBLE
-                return node.status
+                return NodeStatus.FEASIBLE
             # Integral but disjoint subtours — cut loop failed to eliminate them.
             # This node is a dead end: branching can't help (no fractional edges
             # to branch on), and the "solution" isn't a valid tour.
             node.status = NodeStatus.INFEASIBLE
-            return node.status
+            return NodeStatus.INFEASIBLE
 
         # TODO: is heuristic on every node needed?
         # # 4. Heuristic improvement: generate extra feasible solutions
@@ -135,10 +135,9 @@ class TSPBnb:
         for decision in branches:
             child = self.node_factory.create_child(node, decision)
             self.node_queue.enqueue(child)
-            child.status = NodeStatus.ENQUEUED
 
         node.status = NodeStatus.BRANCHED
-        return node.status
+        return NodeStatus.BRANCHED
 
     def search(self, iteration_limit: int = 10_000) -> TSPSolution | None:
         """

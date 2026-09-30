@@ -19,7 +19,7 @@ import {
 import { ArrowDownUp, ArrowLeftRight } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { nodeTypes } from "./nodes"
-import { statusLegendClasses } from "@/lib/status"
+import { statusNodeClasses } from "@/lib/status"
 import { Card, CardContent } from "@/components/ui/card"
 
 interface BnBTreeProps {
@@ -37,7 +37,7 @@ const layouts = {
   LR: layoutTree(initialNodes, initialEdges, "LR", 8, 96),
 } as const
 
-const statuses = Object.keys(statusLegendClasses)
+const statuses = Object.keys(statusNodeClasses) as NodeStatus[]
 
 export function BnBTree({ iteration }: BnBTreeProps) {
   return (
@@ -56,10 +56,7 @@ function BnBTreeCanvas({ iteration }: BnBTreeProps) {
   const finalNodes: BnBFlowNode[] = useMemo(() => {
     const returnValue = nodes.map((n) => {
       const processed_at = n.data.node.processed_at
-      const is_processed =
-        processed_at !== null &&
-        processed_at !== undefined &&
-        processed_at <= iteration
+      const is_processed = processed_at != null && processed_at <= iteration
       return {
         ...n,
         data: {
@@ -103,7 +100,7 @@ function BnBTreeCanvas({ iteration }: BnBTreeProps) {
               {statuses.map((status) => (
                 <li key={status} className="flex items-center gap-2">
                   <span
-                    className={`size-3 rounded-full ${statusLegendClasses[status]}`}
+                    className={`size-3 rounded-full ${statusNodeClasses[status]}`}
                   ></span>
                   <span>{status}</span>
                 </li>
@@ -134,7 +131,7 @@ function MiniMapNode({ x, y }: MiniMapNodeProps) {
       cx={x}
       cy={y}
       r="30"
-      className="fill-pink-500 opacity-50 dark:fill-pink-500"
+      className="fill-pink-500 opacity-50 dark:fill-pink-400"
     />
   )
 }

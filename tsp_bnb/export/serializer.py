@@ -60,6 +60,13 @@ class BnBSerializer:
             depth=node.depth,
             created_at=iteration,
             status=node.status,
+            lb=None,
+            ub=None,
+            processed_at=None,
+            relaxed_solution=None,
+            heuristic_solution=None,
+            fixed_edges=None,
+            children=[],
         )
         if node.parent_id is None:
             self._root = data

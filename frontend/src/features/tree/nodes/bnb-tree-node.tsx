@@ -1,9 +1,8 @@
 import type { BnBFlowNode } from "@/lib/bnb"
-import type { NodeStatus } from "@/types/api-types"
 import { Handle, NodeToolbar, Position, type NodeProps } from "@xyflow/react"
 import type { CSSProperties } from "react"
 import { useState } from "react"
-import { statusNodeClasses } from "@/lib/status"
+import { statusNodeClass } from "@/lib/status"
 
 const invisibleHandle = {
   opacity: 0, // Hide handles
@@ -32,10 +31,10 @@ export function BnBTreeNode({
       onMouseLeave={() => setHovered(false)}
     >
       <NodeToolbar isVisible={tooltipVisible} position={Position.Top}>
-        {node.lb?.toFixed(1)} - {node.ub} - {node.status}
+        {node.lb?.toFixed(1)} - {node.ub} - {node.status ?? "never processed"}
       </NodeToolbar>
       <div
-        className={`flex h-12 w-12 flex-col place-content-center items-center gap-0 rounded-full text-[14px] text-foreground ${statusNodeClasses[node.status]} ${data.dimmed ? "opacity-30" : ""}`}
+        className={`flex h-12 w-12 flex-col place-content-center items-center gap-0 rounded-full text-[14px] text-foreground ${statusNodeClass(node.status)} ${data.dimmed ? "opacity-30" : ""}`}
         // title={`#${node.node_id} · ${node.status}`}
         // className="react-flow__node-default"
       >

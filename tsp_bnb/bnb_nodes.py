@@ -19,7 +19,8 @@ from enum import Enum
 from .branching_decisions import BranchingDecisions
 from .cut_pool import CutPool
 from .data_schema import TSPInstance, TSPSolution
-from .relaxation import Relaxation, RelaxedSolution
+from .relaxation import Relaxation
+from .relaxed_solution import RelaxedSolution
 
 
 class NodeStatus(Enum):
@@ -29,10 +30,8 @@ class NodeStatus(Enum):
 
     FEASIBLE = "Feasible"
     INFEASIBLE = "Infeasible"
-    ENQUEUED = "Enqueued"
     PRUNED = "Pruned"
     BRANCHED = "Branched"
-    UNKNOWN = "Unknown"
 
 
 class BnBNode:
@@ -45,7 +44,7 @@ class BnBNode:
         depth: tree depth (root = 0).
         node_id: unique identifier for tie-breaking and tracking.
         parent_id: optional ID of the parent node.
-        status: current NodeStatus (initialized to UNKNOWN).
+        status: terminal NodeStatus once processed/pruned, None until then.
 
     You should not modify `relaxed_solution` or `branching_decisions` in place.
     Use `copy()` methods if you need to inspect and adjust.
@@ -76,7 +75,7 @@ class BnBNode:
         self.depth = depth
         self.node_id = node_id
         self.parent_id = parent_id
-        self.status = NodeStatus.UNKNOWN
+        self.status: NodeStatus | None = None
 
     def __lt__(self, other: BnBNode) -> bool:
         # nodes compare by ID for deterministic ordering in priority queues

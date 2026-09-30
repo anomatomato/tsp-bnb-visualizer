@@ -1,9 +1,11 @@
+/* tslint:disable */
 /**
 /* This file was automatically generated from pydantic models by running pydantic2ts.
+/* Do not modify it by hand - just update the pydantic models and then re-run the script
 */
 
 /**
- * Status of the node in the visualization.
+ * Enumeration of possible states for a BnB node.
  */
 export type NodeStatus = "Feasible" | "Infeasible" | "Pruned" | "Branched"
 
@@ -14,6 +16,9 @@ export interface BestSolutionEntry {
   iteration: number
   cost: number
   edge_selection: number[]
+  /**
+   * Rendered SVG reference for the best tour.
+   */
   image_path: string | null
 }
 /**
@@ -78,13 +83,22 @@ export interface NodeVisData {
    * The iteration when the node was processed. This may be later than its creation time. It may also be None if it got pruned.
    */
   processed_at: number | null
-  status: NodeStatus
+  /**
+   * Status of the node in the visualization. None until the node reaches a terminal state.
+   */
+  status: NodeStatus | null
+  /**
+   * LP relaxation snapshot at the node, if one was rendered.
+   */
   relaxed_solution: RelaxedSnapshot | null
+  /**
+   * Feasible tour snapshot from the heuristic, if one was found.
+   */
   heuristic_solution: TourSnapshot | null
   /**
    * Per-edge branching state: None = free, 0 = fixed out, 1 = fixed in. Enables frontend tooltips showing why x_ij is 0/1 (LP choice vs branching fixation)
    */
-  fixed_edges: (0 | 1 | null)[] | null
+  fixed_edges: (number | null)[] | null
   /**
    * Children of the node.
    */
@@ -97,6 +111,9 @@ export interface RelaxedSnapshot {
   edge_fractions: number[]
   objective: number
   is_integral_tour: boolean
+  /**
+   * Rendered SVG reference for the relaxation.
+   */
   image_path: string | null
 }
 /**
@@ -105,5 +122,8 @@ export interface RelaxedSnapshot {
 export interface TourSnapshot {
   edge_selection: number[]
   cost: number
+  /**
+   * Rendered SVG reference for the tour.
+   */
   image_path: string | null
 }

@@ -88,3 +88,7 @@ update-frontend *FLAGS:
 # Run tsplib example script
 example:
     uv run python -m examples.run_tsplib
+
+# Generate tsplib eil51 mock for frontend development
+mock:
+    uv run python -m scripts.generate_mock
