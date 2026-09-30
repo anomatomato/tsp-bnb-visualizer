@@ -104,7 +104,7 @@ def render_lp_solution(
 
     nx.draw_networkx_nodes(G, positions, ax=ax, node_size=200, node_color="black")
     if show_node_labels:
-        nx.draw_networkx_labels(G, positions, ax=ax, font_size=9, font_color="grey")
+        nx.draw_networkx_labels(G, positions, ax=ax, font_size=9, font_color="white")
     if show_edge_labels:
         nx.draw_networkx_edge_labels(
             G,
@@ -126,7 +126,7 @@ def render_tour(
     edge_selection: list[int],
     path: Path,
     *,
-    show_edge_labels: bool = True,
+    show_edge_labels: bool = False,
     show_node_labels: bool = True,
 ) -> None:
     """Render tour as SVG: thick blue edges for selected, thin gray for rest.
@@ -153,7 +153,7 @@ def render_tour(
 
     nx.draw_networkx_nodes(G, positions, ax=ax, node_size=200, node_color="black")
     if show_node_labels:
-        nx.draw_networkx_labels(G, positions, ax=ax, font_size=9, font_color="grey")
+        nx.draw_networkx_labels(G, positions, ax=ax, font_size=9, font_color="white")
     if show_edge_labels:
         tour_labels = {e: f"{G.edges[e].get('weight'):.1f}" for e in included_edges}
         nx.draw_networkx_edge_labels(
