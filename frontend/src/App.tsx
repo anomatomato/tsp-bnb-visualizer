@@ -37,7 +37,7 @@ export function App() {
           <p className="text-sm text-muted-foreground">
             {bnbRun.instance.nodes.length} nodes ·{" "}
             {bnbRun.processing_order.length} iterations · optimal cost{" "}
-            {bnbRun.best_solutions.at(-1)?.cost.toFixed(1)}
+            {bnbRun.best_solutions.at(-1)?.cost.toFixed(2)}
           </p>
           <div className="ml-auto">
             <ModeToggle />
@@ -47,7 +47,11 @@ export function App() {
         <main className="flex-1">
           <ResizablePanelGroup orientation="horizontal">
             <ResizablePanel minSize="192px" defaultSize="75">
-              <BnBTree iteration={iteration} />
+              <BnBTree
+                iteration={iteration}
+                max={bnbRun.processing_order.length}
+                setIteration={setIteration}
+              />
             </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel minSize="192px">
@@ -55,14 +59,6 @@ export function App() {
             </ResizablePanel>
           </ResizablePanelGroup>
         </main>
-
-        <footer className="h-24 border-t px-6 py-2">
-          <TimeLine
-            iteration={iteration}
-            max={bnbRun.processing_order.length}
-            setIteration={setIteration}
-          />
-        </footer>
       </div>
     </>
   )

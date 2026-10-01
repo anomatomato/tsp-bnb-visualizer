@@ -8,7 +8,8 @@ import {
 } from "@xyflow/react"
 import type { CSSProperties } from "react"
 import { useEffect, useRef, useState } from "react"
-import { statusNodeClass } from "@/lib/status"
+import { statusNodeClass, statusCurrentNodeClass } from "@/lib/status"
+import { cn } from "cn"
 
 const invisibleHandle = {
   opacity: 0, // Hide handles
@@ -72,7 +73,17 @@ export function BnBTreeNode({
       </NodeToolbar>
       <EdgeToolbar>testing</EdgeToolbar>
       <div
-        className={`flex h-12 w-12 flex-col place-content-center items-center gap-0 rounded-full text-[14px] text-foreground ${statusNodeClass(node.status)} ${data.dimmed ? "opacity-30" : ""}`}
+        className={cn(
+          "flex h-12 w-12 flex-col place-content-center items-center gap-0 rounded-full text-[14px] text-foreground",
+          statusNodeClass(node.status),
+          data.dimmed ? "opacity-30" : "",
+          data.current
+            ? [
+                "shadow-[0_0_24px_(--tw-shadow-color)]",
+                statusCurrentNodeClass(node.status),
+              ]
+            : ""
+        )}
         // title={`#${node.node_id} · ${node.status}`}
         // className="react-flow__node-default"
       >

@@ -18,12 +18,16 @@ import {
 } from "@xyflow/react"
 import { ArrowDownUp, ArrowLeftRight } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
+import { type Dispatch, type SetStateAction } from "react"
 import { nodeTypes } from "./nodes"
 import { statusNodeClasses } from "@/lib/status"
 import { Card, CardContent } from "@/components/ui/card"
+import { TimeLine } from "@/features/timeline/timeline"
 
 interface BnBTreeProps {
   iteration: number
+  max: number
+  setIteration: Dispatch<SetStateAction<number>>
 }
 
 // tsc infers JSON string fields as `string`, not the generated literal
@@ -39,15 +43,15 @@ const layouts = {
 
 const statuses = Object.keys(statusNodeClasses) as NodeStatus[]
 
-export function BnBTree({ iteration }: BnBTreeProps) {
+export function BnBTree(props: BnBTreeProps) {
   return (
     <ReactFlowProvider>
-      <BnBTreeCanvas iteration={iteration} />
+      <BnBTreeCanvas {...props} />
     </ReactFlowProvider>
   )
 }
 
-function BnBTreeCanvas({ iteration }: BnBTreeProps) {
+function BnBTreeCanvas({ iteration, setIteration, max }: BnBTreeProps) {
   const { theme } = useTheme()
   const [nodes, setNodes, onNodesChange] = useNodesState(layouts.TB)
   const [direction, setDirection] = useState<Direction>("TB")
@@ -56,19 +60,21 @@ function BnBTreeCanvas({ iteration }: BnBTreeProps) {
   const finalNodes: BnBFlowNode[] = useMemo(() => {
     const returnValue = nodes.map((n) => {
       const processed_at = n.data.node.processed_at
-      const is_processed = processed_at != null && processed_at <= iteration
+      const is_processed = processed_at !== null && processed_at <= iteration
+      const current = processed_at === iteration
       return {
         ...n,
         data: {
           ...n.data,
           dimmed: !is_processed,
+          current: current,
         },
       }
     })
     return returnValue
   }, [nodes, iteration])
 
-  const onToggleLayout = useCallback(() => {
+  const handleToggleLayout = useCallback(() => {
     const next: Direction = direction === "TB" ? "LR" : "TB"
     setDirection(next)
     setNodes(layouts[next])
@@ -89,11 +95,11 @@ function BnBTreeCanvas({ iteration }: BnBTreeProps) {
       <MiniMap nodeComponent={MiniMapNode} pannable zoomable />
       <Background />
       <Controls showInteractive={false}>
-        <ControlButton onClick={onToggleLayout} title="Change Layout">
+        <ControlButton onClick={handleToggleLayout} title="Change Layout">
           {direction === "TB" ? <ArrowLeftRight /> : <ArrowDownUp />}
         </ControlButton>
       </Controls>
-      <Panel position="top-left" className="flex flex-col">
+      <Panel position="top-left">
         <Card>
           <CardContent>
             <ul>
@@ -114,12 +120,15 @@ function BnBTreeCanvas({ iteration }: BnBTreeProps) {
         {/* label/icon shows the direction you will switch TO */}
         <Button
           variant="outline"
-          onClick={onToggleLayout}
+          onClick={handleToggleLayout}
           title="Change Layout"
         >
           {direction === "TB" ? <ArrowLeftRight /> : <ArrowDownUp />}
           {direction === "TB" ? "horizontal" : "vertical"}
         </Button>
+      </Panel>
+      <Panel position="bottom-center">
+        <TimeLine iteration={iteration} setIteration={setIteration} max={max} />
       </Panel>
     </ReactFlow>
   )

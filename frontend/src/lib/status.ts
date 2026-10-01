@@ -12,6 +12,18 @@ export const neutralNodeClasses = "bg-muted/50 border-muted-foreground"
 export const statusNodeClass = (s: NodeStatus | null) =>
   s === null ? neutralNodeClasses : statusNodeClasses[s]
 
+/** ring + glow color for the current-iteratio node */
+export const statusCurrentNodeClasses: Record<NodeStatus, string> = {
+  Branched: "ring-3 ring-bnb-status-branched shadow-bnb-status-branched",
+  Feasible: "ring-3 ring-bnb-status-feasible shadow-bnb-status-feasible",
+  Infeasible: "ring-3 ring-bnb-status-infeasible shadow-bnb-status-infeasible",
+  Pruned: "ring-3 ring-bnb-status-pruned shadow-bnb-status-pruned",
+}
+export const neutralCurrentNodeClasses =
+  "ring-3 ring-muted-foreground shadow-muted-foreground"
+export const statusCurrentNodeClass = (s: NodeStatus | null) =>
+  s === null ? neutralCurrentNodeClasses : statusCurrentNodeClasses[s]
+
 export const statusBadgeClasses: Record<NodeStatus, string> = {
   Feasible: "bg-bnb-status-feasible",
   Branched: "bg-bnb-status-branched",
