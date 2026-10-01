@@ -91,7 +91,7 @@ class ProgressTracker:
             f"{'Iter':>5} {'Explored/Total':>15} {'Depth':>5} "
             f"{'Status':>10} {'NodeLB':>12} {'Incumbent':>11} {'GlobalLB':>11}"
         )
-        print("BnB search started:")
+        print(f"BnB search started for {self._instance.name}:")
         print(header)
         print("=" * len(header))
 
