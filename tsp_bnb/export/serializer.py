@@ -232,11 +232,12 @@ class BnBSerializer:
 
         self._write_index_html(self._run_dir, run_data)
 
-        try:
-            webbrowser.open_new_tab(str(self._run_dir / "index.html"))
-        except webbrowser.Error as e:
-            logger.warning(
-                f"Could not open browser: {e}. Open {self._run_dir / 'index.html'} manually."
-            )
+        if open_browser:
+            try:
+                webbrowser.open_new_tab(str(self._run_dir / "index.html"))
+            except webbrowser.Error as e:
+                logger.warning(
+                    f"Could not open browser: {e}. Open {self._run_dir / 'index.html'} manually."
+                )
 
         return self._run_dir
