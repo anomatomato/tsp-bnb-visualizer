@@ -22,7 +22,7 @@ import { type Dispatch, type SetStateAction } from "react"
 import { nodeTypes } from "./nodes"
 import { statusNodeClasses } from "@/lib/status"
 import { Card, CardContent } from "@/components/ui/card"
-import { TimeLine } from "@/features/timeline/timeline"
+import { TimeLine } from "./components/timeline"
 
 interface BnBTreeProps {
   iteration: number

@@ -28,7 +28,7 @@ class NodeStatus(Enum):
     Enumeration of possible states for a BnB node.
     """
 
-    FEASIBLE = "Feasible"
+    INTEGER = "Integer"
     INFEASIBLE = "Infeasible"
     PRUNED = "Pruned"
     BRANCHED = "Branched"

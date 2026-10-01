@@ -147,7 +147,7 @@ BnBRunData
 │   ├── node_id, parent_id, depth
 │   ├── lb, ub (float | None)
 │   ├── created_at, processed_at    # iteration numbers
-│   ├── status: NodeStatus          # unknown|enqueued|branched|feasible|pruned|infeasible
+│   ├── status: NodeStatus          # branched|integer|pruned|infeasible (None until processed)
 │   ├── relaxed_solution?: RelaxedSnapshot   # edge_fractions, objective, is_integral_tour, image_path
 │   ├── heuristic_solution?: TourSnapshot     # edge_selection, cost, image_path
 │   ├── fixed_edges: (0|1|null)[]   # per edge index: free/out/in

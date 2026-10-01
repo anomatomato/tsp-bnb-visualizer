@@ -4,7 +4,6 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import { TimeLine } from "@/features/timeline/timeline"
 import { BnBTree } from "@/features/tree/tree"
 import run from "@/mock/eil51/bnb_state.json"
 import Inspector from "@/features/inspector/inspector"

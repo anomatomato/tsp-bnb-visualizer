@@ -110,8 +110,8 @@ class TSPBnb:
                 )
                 self.solutions.add(feasible_sol)
                 self.progress_tracker.on_feasible_solution(feasible_sol)
-                node.status = NodeStatus.FEASIBLE
-                return NodeStatus.FEASIBLE
+                node.status = NodeStatus.INTEGER
+                return NodeStatus.INTEGER
             # Integral but disjoint subtours — cut loop failed to eliminate them.
             # This node is a dead end: branching can't help (no fractional edges
             # to branch on), and the "solution" isn't a valid tour.

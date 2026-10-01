@@ -19450,7 +19450,7 @@
                             "depth": 6,
                             "created_at": 20,
                             "processed_at": 39,
-                            "status": "Feasible",
+                            "status": "Integer",
                             "relaxed_solution": {
                               "edge_fractions": [
                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,

@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Minus, Pause, Play, Plus, SkipBack, SkipForward } from "lucide-react"
 import { type Dispatch, type SetStateAction } from "react"
-import { usePlayback } from "./hooks/use-playback"
+import { usePlayback } from "../hooks/use-playback"
 
 interface TimeLineProps {
   iteration: number

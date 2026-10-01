@@ -7,7 +7,7 @@
 /**
  * Enumeration of possible states for a BnB node.
  */
-export type NodeStatus = "Feasible" | "Infeasible" | "Pruned" | "Branched"
+export type NodeStatus = "Integer" | "Infeasible" | "Pruned" | "Branched"
 
 /**
  * One entry in the global best-solutions timeline.

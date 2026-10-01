@@ -9,7 +9,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* Token registry: maps CSS variables → Tailwind color utilities
-   (bg-primary, text-muted-foreground, fill-(--bnb-status-feasible)/20 …).
+   (bg-primary, text-muted-foreground, fill-(--bnb-status-integer)/20 …).
    Every new token needs one --color-* line here. */
 @theme inline {
   --font-heading: var(--font-sans);
@@ -47,7 +47,7 @@
   --color-background: var(--background);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
-  --color-bnb-status-feasible: var(--bnb-status-feasible);
+  --color-bnb-status-integer: var(--bnb-status-integer);
   --color-bnb-status-infeasible: var(--bnb-status-infeasible);
   --color-bnb-status-branched: var(--bnb-status-branched);
   --color-bnb-status-pruned: var(--bnb-status-pruned);
@@ -117,7 +117,7 @@
   --warning: oklch(0.84 0.16 84);
   --warning-foreground: oklch(0.28 0.07 46);
   /* BnB node status family — one L (~0.58), sweep H */
-  --bnb-status-feasible: oklch(0.627 0.194 149.214); /* green-600 */
+  --bnb-status-integer: oklch(0.627 0.194 149.214); /* green-600 */
   --bnb-status-infeasible: oklch(
     0.577 0.245 27.325
   ); /* = red-600, matches --destructive */
@@ -165,7 +165,7 @@
   --warning: oklch(0.41 0.11 46);
   --warning-foreground: oklch(0.99 0.02 95);
   /* same H, ~+0.10 L, ×~0.6 C */
-  --bnb-status-feasible: oklch(0.792 0.209 151.711); /* green-400 */
+  --bnb-status-integer: oklch(0.792 0.209 151.711); /* green-400 */
   --bnb-status-infeasible: oklch(
     0.704 0.191 22.216
   ); /* = red-400, matches dark --destructive */
