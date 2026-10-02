@@ -44,6 +44,8 @@ export function BnBTreeNode({
   // 2. derived
   const tooltipVisible = selected || hovered
   const { node } = data
+  const objective = node.relaxed_solution?.objective
+  const label = objective === undefined ? "-" : objective.toFixed(1)
 
   // 3. handlers
   function handleMouseEnter() {
@@ -74,12 +76,12 @@ export function BnBTreeNode({
       <EdgeToolbar>testing</EdgeToolbar>
       <div
         className={cn(
-          "flex h-12 w-12 flex-col place-content-center items-center gap-0 rounded-full text-[14px] text-foreground",
+          "relative flex size-12 flex-col place-content-center items-center rounded-full text-foreground",
           statusNodeClass(node.status),
           data.dimmed ? "opacity-30" : "",
           data.current
             ? [
-                "shadow-[0_0_24px_(--tw-shadow-color)]",
+                "shadow-[0_0_--spacing(6)_(--tw-shadow-color)]",
                 statusCurrentNodeClass(node.status),
               ]
             : ""
@@ -87,8 +89,37 @@ export function BnBTreeNode({
         // title={`#${node.node_id} · ${node.status}`}
         // className="react-flow__node-default"
       >
-        <span className="font-bold">{node.processed_at ?? "-"}</span>
-        <span>{node.relaxed_solution?.objective.toFixed(1) ?? "-"}</span>
+        {/*<span className="font-bold">{node.processed_at ?? "-"}</span>*/}
+        <span
+          className={
+            // Auto-fit label: shrink the font until the number fits inside the node circle; never grow past the normal size. Expanded formula:
+            //   font-size = min(1rem, 44px / (n × 0.62em))
+            // · --spacing(11) = 11 × 4px = 44px — the usable width inside the
+            //   size-12 (48px) circle, kept in grid units so it tracks --spacing.
+            // · var(--n) is the label's character count, set in the style prop
+            //   below — inline because it changes per render; Tailwind only
+            //   emits classes it finds as complete literal text.
+            // · tabular-nums gives every digit the same advance width, so
+            //   n glyphs occupy n × 0.62em; 44px ÷ that = the px-per-em
+            //   (i.e. font-size) that makes the run exactly fill the circle.
+            // · 0.62 is the measured per-glyph em width of this font
+            "text-[min(1rem,calc((--spacing(11))/(var(--n)*0.62)))] font-semibold tabular-nums"
+          }
+          style={
+            {
+              "--n": label.length,
+            } as CSSProperties
+          }
+        >
+          {label}
+        </span>
+        <span
+          className={cn(
+            "absolute -top-3.5 -left-1 text-xs text-muted-foreground tabular-nums"
+          )}
+        >
+          {node.processed_at ?? "-"}
+        </span>
       </div>
       {/* Handles stay mounted (edges anchor to them) but invisible */}
       <Handle
