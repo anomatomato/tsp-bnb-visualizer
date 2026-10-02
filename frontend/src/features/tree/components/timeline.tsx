@@ -31,7 +31,7 @@ export function TimeLine({ iteration, max, setIteration }: TimeLineProps) {
           step={1}
           className="min-w-2xs"
         />
-        <span className="shrink-0 font-mono text-sm text-muted-foreground tabular-nums">
+        <span className="shrink-0 font-mono text-sm tabular-nums">
           {iteration}/{max}
         </span>
       </div>

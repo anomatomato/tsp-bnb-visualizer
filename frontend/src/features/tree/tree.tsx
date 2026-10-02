@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { toReactFlow, type BnBFlowNode } from "@/lib/bnb"
 import { layoutTree, type Direction } from "@/lib/layout"
 import runJson from "@/mock/eil51/bnb_state.json"
-import type { BnBRunData, NodeStatus } from "@/types/api-types"
+import type { BnBRunData } from "@/types/api-types"
 import {
   Background,
   ControlButton,
@@ -20,9 +20,8 @@ import { ArrowDownUp, ArrowLeftRight } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { type Dispatch, type SetStateAction } from "react"
 import { nodeTypes } from "./nodes"
-import { statusNodeClasses } from "@/lib/status"
-import { Card, CardContent } from "@/components/ui/card"
 import { TimeLine } from "./components/timeline"
+import Legend from "./components/legend"
 
 interface BnBTreeProps {
   iteration: number
@@ -40,8 +39,6 @@ const layouts = {
   TB: layoutTree(initialNodes, initialEdges, "TB", 30, 42),
   LR: layoutTree(initialNodes, initialEdges, "LR", 8, 96),
 } as const
-
-const statuses = Object.keys(statusNodeClasses) as NodeStatus[]
 
 export function BnBTree(props: BnBTreeProps) {
   return (
@@ -94,27 +91,13 @@ function BnBTreeCanvas({ iteration, setIteration, max }: BnBTreeProps) {
     >
       <MiniMap nodeComponent={MiniMapNode} pannable zoomable />
       <Background />
-      <Controls showInteractive={false}>
+      <Controls showInteractive={false} className="shadow-lg">
         <ControlButton onClick={handleToggleLayout} title="Change Layout">
           {direction === "TB" ? <ArrowLeftRight /> : <ArrowDownUp />}
         </ControlButton>
       </Controls>
       <Panel position="top-left">
-        <Card>
-          <CardContent>
-            <ul>
-              {statuses.map((status) => (
-                <li key={status} className="flex items-center gap-2">
-                  <span
-                    className={`size-3 rounded-full ${statusNodeClasses[status]}`}
-                  ></span>
-                  <span>{status}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-muted-foreground">label: LP bound</p>
-          </CardContent>
-        </Card>
+        <Legend />
       </Panel>
       <Panel position="top-right">
         {/* label/icon shows the direction you will switch TO */}
@@ -122,6 +105,7 @@ function BnBTreeCanvas({ iteration, setIteration, max }: BnBTreeProps) {
           variant="outline"
           onClick={handleToggleLayout}
           title="Change Layout"
+          className="shadow-sm active:not-aria-[haspopup]:shadow-none"
         >
           {direction === "TB" ? <ArrowLeftRight /> : <ArrowDownUp />}
           {direction === "TB" ? "horizontal" : "vertical"}

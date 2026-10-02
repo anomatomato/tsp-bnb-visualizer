@@ -1,5 +1,17 @@
 import type { NodeStatus } from "@/types/api-types"
 
+/** status descriptions for tooltip content */
+export const statusDescriptions: Record<NodeStatus, string> = {
+  Branched: "Fractional LP relaxation - search split on a fractional edge",
+  Integer: "Integral LP relaxation - candidate incumbent",
+  Infeasible: "LP relaxation is proven to be infeasible",
+  Pruned:
+    "LP bound ≥ incumbent - LP solution worse than best tour found so far",
+}
+export const neutralDescription = "Never processed - still in the open queue"
+export const statusDescription = (s: NodeStatus | null) =>
+  s === null ? neutralDescription : statusDescriptions[s]
+
 /** tree node fill: status tint + stroke */
 export const statusNodeClasses: Record<NodeStatus, string> = {
   Branched: "bg-bnb-status-branched/50 border-bnb-status-branched",

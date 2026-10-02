@@ -36,7 +36,7 @@ export default function Inspector({ node, incumbent }: InspectorProps) {
           <Badge className={`${statusBadgeClass(node.status)}`}>
             {node.status ?? "never processed"}
           </Badge>
-          <span>· depth {node.depth + 1}</span>
+          <span title={`depth = ${node.depth + 1}`}>↓ {node.depth + 1}</span>
         </header>
         {/* Act 1: decisions — fixedIn/fixedOut pair lists + own-branch diff
             (parent via nodeById/toNodeMap; thread map or parent prop in) */}
