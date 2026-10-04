@@ -5,7 +5,6 @@ import { layoutTree, type Direction } from "@/lib/layout"
 import runJson from "@/mock/eil51/bnb_state.json"
 import type { BnBRunData } from "@/types/api-types"
 import {
-  Background,
   ControlButton,
   Controls,
   MiniMap,
@@ -17,10 +16,14 @@ import {
   type MiniMapNodeProps,
 } from "@xyflow/react"
 import { ArrowDownUp, ArrowLeftRight } from "lucide-react"
-import { useCallback, useState } from "react"
+import { useCallback } from "react"
 import { nodeTypes } from "./nodes"
 import { TimeLine } from "./components/timeline"
 import Legend from "./components/legend"
+import {
+  DirectionProvider,
+  useDirectionContext,
+} from "./context/direction-context"
 
 // tsc infers JSON string fields as `string`, not the generated literal
 // unions — one typed cast at the boundary keeps toReactFlow type-safe.
@@ -36,7 +39,9 @@ const layouts = {
 export function BnBTree() {
   return (
     <ReactFlowProvider>
-      <BnBTreeCanvas />
+      <DirectionProvider initial="TB">
+        <BnBTreeCanvas />
+      </DirectionProvider>
     </ReactFlowProvider>
   )
 }
@@ -44,7 +49,7 @@ export function BnBTree() {
 function BnBTreeCanvas() {
   const { theme } = useTheme()
   const [nodes, setNodes, onNodesChange] = useNodesState(layouts.TB)
-  const [direction, setDirection] = useState<Direction>("TB")
+  const { direction, setDirection } = useDirectionContext()
   const { fitView } = useReactFlow<BnBFlowNode>()
 
   const handleToggleLayout = useCallback(() => {
@@ -52,7 +57,7 @@ function BnBTreeCanvas() {
     setDirection(next)
     setNodes(layouts[next])
     requestAnimationFrame(() => fitView({ duration: 0 }))
-  }, [direction, setNodes, fitView])
+  }, [direction, setDirection, setNodes, fitView])
 
   return (
     <ReactFlow
@@ -66,7 +71,6 @@ function BnBTreeCanvas() {
       fitView
     >
       <MiniMap nodeComponent={MiniMapNode} pannable zoomable />
-      <Background />
       <Controls showInteractive={false} className="shadow-lg">
         <ControlButton onClick={handleToggleLayout} title="Change Layout">
           {direction === "TB" ? <ArrowLeftRight /> : <ArrowDownUp />}

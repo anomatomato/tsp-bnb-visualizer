@@ -1,17 +1,13 @@
 import type { BnBFlowNode } from "@/lib/bnb"
-import {
-  EdgeToolbar,
-  Handle,
-  NodeToolbar,
-  Position,
-  type NodeProps,
-} from "@xyflow/react"
+import { Handle, NodeToolbar, Position, type NodeProps } from "@xyflow/react"
 import type { CSSProperties } from "react"
 import { useEffect, useRef, useState } from "react"
 import { statusNodeClass, statusCurrentNodeClass } from "@/lib/status"
 import { cn } from "cn"
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react"
 import { useIterationContext } from "@/context/iteration-context"
+import { useDirectionContext } from "../context/direction-context"
+import type { Direction } from "@/lib/layout"
 
 const invisibleHandle = {
   opacity: 0, // Hide handles
@@ -26,6 +22,11 @@ const invisibleHandle = {
 
 const toolbarTimeout = 100
 
+const labelPositionClass: Record<Direction, string> = {
+  TB: "-top-3.5 -left-1",
+  LR: "-top-2 -left-3",
+}
+
 export function BnBTreeNode({
   selected,
   data,
@@ -34,6 +35,7 @@ export function BnBTreeNode({
 }: NodeProps<BnBFlowNode>) {
   // 1. hooks
   const { iteration } = useIterationContext()
+  const { direction } = useDirectionContext()
   const [hovered, setHovered] = useState(false)
   const timeoutId = useRef<number | null>(null)
   // Disposal of timeout on unmount
@@ -70,11 +72,7 @@ export function BnBTreeNode({
   }
 
   return (
-    <div
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className=""
-    >
+    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <NodeToolbar isVisible={tooltipVisible} position={Position.Top}>
         <div className="flex flex-col gap-1 rounded-md border bg-accent px-2 py-1 text-sm">
           <span className="flex items-center">
@@ -86,7 +84,7 @@ export function BnBTreeNode({
           </span>
         </div>
       </NodeToolbar>
-      <EdgeToolbar>testing</EdgeToolbar>
+      {/*<EdgeToolbar>testing</EdgeToolbar>*/}
       <div
         className={cn(
           "relative flex size-12 flex-col place-content-center items-center rounded-full text-foreground",
@@ -128,7 +126,8 @@ export function BnBTreeNode({
         </span>
         <span
           className={cn(
-            "absolute -top-3.5 -left-1 text-xs text-muted-foreground tabular-nums"
+            "absolute -top-3.5 -left-1 text-xs text-muted-foreground tabular-nums",
+            labelPositionClass[direction]
           )}
         >
           {node.processed_at ?? "-"}

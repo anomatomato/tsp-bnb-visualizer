@@ -6,8 +6,6 @@ export type FlatNode = Omit<NodeVisData, "children">
 
 export type BnBFlowNodeData = {
   node: FlatNode
-  dimmed?: boolean
-  current?: boolean
 }
 
 export type BnBFlowNode = Node<BnBFlowNodeData, "bnb">
