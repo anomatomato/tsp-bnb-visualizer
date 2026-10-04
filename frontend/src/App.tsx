@@ -5,38 +5,45 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 import { BnBTree } from "@/features/tree/tree"
-import run from "@/mock/eil51/bnb_state.json"
+import runJson from "@/mock/eil51/bnb_state.json"
 import Inspector from "@/features/inspector/inspector"
-import { useClampedState } from "@/hooks/use-clamped-state"
 import { incumbentAt, toNodeMap } from "@/lib/bnb"
 import type { BnBRunData } from "@/types/api-types"
+import {
+  IterationProvider,
+  useIterationContext,
+} from "@/context/iteration-context"
 
-const bnbRun = run as BnBRunData
-const nodeMap = toNodeMap(bnbRun)
+const run = runJson as BnBRunData
+const nodeMap = toNodeMap(run)
 
 export function App() {
-  const [iteration, setIteration] = useClampedState(
-    bnbRun.processing_order.length,
-    1,
-    bnbRun.processing_order.length
+  return (
+    <IterationProvider max={run.processing_order.length}>
+      <AppShell />
+    </IterationProvider>
   )
-  const currentNodeId = bnbRun.processing_order[iteration - 1]
+}
+
+function AppShell() {
+  const { iteration } = useIterationContext()
+  const currentNodeId = run.processing_order[iteration - 1]
   const currentNode = nodeMap.get(currentNodeId)
-  const currentIncumbent = incumbentAt(bnbRun, iteration)
+  const currentIncumbent = incumbentAt(run, iteration)
 
   return (
     <>
-      <title>TSP BnB </title>
+      <title>TSP BnB</title>
       <div className="flex h-svh flex-col">
         <header className="flex h-16 shrink-0 items-center gap-6 border-b px-6">
           <h1 className="font-bold">
             TSP Branch & Bound Visualization{" "}
-            <span className="italic">({bnbRun.instance.name})</span>
+            <span className="italic">({run.instance.name})</span>
           </h1>
           <p className="text-sm text-muted-foreground">
-            {bnbRun.instance.nodes.length} nodes ·{" "}
-            {bnbRun.processing_order.length} iterations · optimal cost{" "}
-            {bnbRun.best_solutions.at(-1)?.cost.toFixed(2)}
+            {run.instance.nodes.length} nodes · {run.processing_order.length}{" "}
+            iterations · optimal cost{" "}
+            {run.best_solutions.at(-1)?.cost.toFixed(2)}
           </p>
           <div className="ml-auto">
             <ModeToggle />
@@ -46,11 +53,7 @@ export function App() {
         <main className="flex-1">
           <ResizablePanelGroup orientation="horizontal">
             <ResizablePanel minSize="192px" defaultSize="75">
-              <BnBTree
-                iteration={iteration}
-                max={bnbRun.processing_order.length}
-                setIteration={setIteration}
-              />
+              <BnBTree />
             </ResizablePanel>
             <ResizableHandle />
             <ResizablePanel minSize="192px">

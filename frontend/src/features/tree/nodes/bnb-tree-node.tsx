@@ -10,6 +10,8 @@ import type { CSSProperties } from "react"
 import { useEffect, useRef, useState } from "react"
 import { statusNodeClass, statusCurrentNodeClass } from "@/lib/status"
 import { cn } from "cn"
+import { ArrowDownCircle, ArrowUpCircle } from "lucide-react"
+import { useIterationContext } from "@/context/iteration-context"
 
 const invisibleHandle = {
   opacity: 0, // Hide handles
@@ -31,6 +33,7 @@ export function BnBTreeNode({
   sourcePosition,
 }: NodeProps<BnBFlowNode>) {
   // 1. hooks
+  const { iteration } = useIterationContext()
   const [hovered, setHovered] = useState(false)
   const timeoutId = useRef<number | null>(null)
   // Disposal of timeout on unmount
@@ -46,6 +49,10 @@ export function BnBTreeNode({
   const { node } = data
   const objective = node.relaxed_solution?.objective
   const label = objective === undefined ? "-" : objective.toFixed(1)
+
+  const processed_at = data.node.processed_at
+  const isProcessed = processed_at !== null && processed_at <= iteration
+  const isCurrent = processed_at === iteration
 
   // 3. handlers
   function handleMouseEnter() {
@@ -69,8 +76,14 @@ export function BnBTreeNode({
       className=""
     >
       <NodeToolbar isVisible={tooltipVisible} position={Position.Top}>
-        <div className="border px-2 py-1">
-          {node.lb?.toFixed(1)} - {node.ub} - {node.status ?? "never processed"}
+        <div className="flex flex-col gap-1 rounded-md border bg-accent px-2 py-1 text-sm">
+          <span className="flex items-center">
+            <ArrowDownCircle size="16" className="mr-2" /> LB:{" "}
+            {node.relaxed_solution?.objective.toFixed(2)}
+          </span>
+          <span className="flex items-center">
+            <ArrowUpCircle size="16" className="mr-2" /> UB: {node.ub}
+          </span>
         </div>
       </NodeToolbar>
       <EdgeToolbar>testing</EdgeToolbar>
@@ -78,8 +91,8 @@ export function BnBTreeNode({
         className={cn(
           "relative flex size-12 flex-col place-content-center items-center rounded-full text-foreground",
           statusNodeClass(node.status),
-          data.dimmed ? "opacity-30" : "",
-          data.current
+          !isProcessed ? "opacity-30" : "",
+          isCurrent
             ? [
                 "shadow-[0_0_--spacing(6)_(--tw-shadow-color)]",
                 statusCurrentNodeClass(node.status),

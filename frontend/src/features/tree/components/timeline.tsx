@@ -1,16 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { Slider } from "@/components/ui/slider"
 import { Minus, Pause, Play, Plus, SkipBack, SkipForward } from "lucide-react"
-import { type Dispatch, type SetStateAction } from "react"
 import { usePlayback } from "../hooks/use-playback"
+import { useIterationContext } from "@/context/iteration-context"
 
-interface TimeLineProps {
-  iteration: number
-  max: number
-  setIteration: Dispatch<SetStateAction<number>>
-}
-
-export function TimeLine({ iteration, max, setIteration }: TimeLineProps) {
+export function TimeLine() {
+  const { iteration, setIteration, max } = useIterationContext()
   const { isPlaying, togglePlay, prev, next, jumpToFirst, jumpToLast } =
     usePlayback(iteration, max, setIteration)
 

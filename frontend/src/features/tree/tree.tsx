@@ -17,17 +17,10 @@ import {
   type MiniMapNodeProps,
 } from "@xyflow/react"
 import { ArrowDownUp, ArrowLeftRight } from "lucide-react"
-import { useCallback, useMemo, useState } from "react"
-import { type Dispatch, type SetStateAction } from "react"
+import { useCallback, useState } from "react"
 import { nodeTypes } from "./nodes"
 import { TimeLine } from "./components/timeline"
 import Legend from "./components/legend"
-
-interface BnBTreeProps {
-  iteration: number
-  max: number
-  setIteration: Dispatch<SetStateAction<number>>
-}
 
 // tsc infers JSON string fields as `string`, not the generated literal
 // unions — one typed cast at the boundary keeps toReactFlow type-safe.
@@ -40,36 +33,19 @@ const layouts = {
   LR: layoutTree(initialNodes, initialEdges, "LR", 8, 96),
 } as const
 
-export function BnBTree(props: BnBTreeProps) {
+export function BnBTree() {
   return (
     <ReactFlowProvider>
-      <BnBTreeCanvas {...props} />
+      <BnBTreeCanvas />
     </ReactFlowProvider>
   )
 }
 
-function BnBTreeCanvas({ iteration, setIteration, max }: BnBTreeProps) {
+function BnBTreeCanvas() {
   const { theme } = useTheme()
   const [nodes, setNodes, onNodesChange] = useNodesState(layouts.TB)
   const [direction, setDirection] = useState<Direction>("TB")
   const { fitView } = useReactFlow<BnBFlowNode>()
-
-  const finalNodes: BnBFlowNode[] = useMemo(() => {
-    const returnValue = nodes.map((n) => {
-      const processed_at = n.data.node.processed_at
-      const is_processed = processed_at !== null && processed_at <= iteration
-      const current = processed_at === iteration
-      return {
-        ...n,
-        data: {
-          ...n.data,
-          dimmed: !is_processed,
-          current: current,
-        },
-      }
-    })
-    return returnValue
-  }, [nodes, iteration])
 
   const handleToggleLayout = useCallback(() => {
     const next: Direction = direction === "TB" ? "LR" : "TB"
@@ -80,7 +56,7 @@ function BnBTreeCanvas({ iteration, setIteration, max }: BnBTreeProps) {
 
   return (
     <ReactFlow
-      nodes={finalNodes}
+      nodes={nodes}
       edges={initialEdges}
       onNodesChange={onNodesChange}
       nodeTypes={nodeTypes}
@@ -112,7 +88,7 @@ function BnBTreeCanvas({ iteration, setIteration, max }: BnBTreeProps) {
         </Button>
       </Panel>
       <Panel position="bottom-center">
-        <TimeLine iteration={iteration} setIteration={setIteration} max={max} />
+        <TimeLine />
       </Panel>
     </ReactFlow>
   )
