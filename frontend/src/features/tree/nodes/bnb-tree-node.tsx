@@ -34,7 +34,7 @@ export function BnBTreeNode({
   sourcePosition,
 }: NodeProps<BnBFlowNode>) {
   // 1. hooks
-  const { iteration } = useIterationContext()
+  const { iteration, setIteration } = useIterationContext()
   const { direction } = useDirectionContext()
   const [hovered, setHovered] = useState(false)
   const timeoutId = useRef<number | null>(null)
@@ -71,6 +71,12 @@ export function BnBTreeNode({
     timeoutId.current = setTimeout(() => setHovered(false), toolbarTimeout)
   }
 
+  function handleNodeClick() {
+    if (node.processed_at !== null) {
+      setIteration(node.processed_at)
+    }
+  }
+
   return (
     <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <NodeToolbar isVisible={tooltipVisible} position={Position.Top}>
@@ -85,7 +91,8 @@ export function BnBTreeNode({
         </div>
       </NodeToolbar>
       {/*<EdgeToolbar>testing</EdgeToolbar>*/}
-      <div
+      <button
+        onClick={handleNodeClick}
         className={cn(
           "relative flex size-12 flex-col place-content-center items-center rounded-full text-foreground",
           statusNodeClass(node.status),
@@ -132,7 +139,7 @@ export function BnBTreeNode({
         >
           {node.processed_at ?? "-"}
         </span>
-      </div>
+      </button>
       {/* Handles stay mounted (edges anchor to them) but invisible */}
       <Handle
         type="target"

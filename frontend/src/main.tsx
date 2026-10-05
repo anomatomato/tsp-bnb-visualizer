@@ -6,7 +6,17 @@ import App from "@/App.tsx"
 import { ThemeProvider } from "@/components/theme-provider.tsx"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
-createRoot(document.getElementById("root")!).render(
+const rootId = "root"
+let rootElement = document.getElementById("root")
+
+// Create root if it doesn't exist
+if (!rootElement) {
+  rootElement = document.createElement("div")
+  rootElement.id = rootId
+  document.body.append(rootElement)
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <ThemeProvider>
       <TooltipProvider>
