@@ -1,7 +1,9 @@
 import js from "@eslint/js"
+import jsxA11y from "eslint-plugin-jsx-a11y"
+import { plugin as shadcn } from "@shadcn/lint"
 import reactHooks from "eslint-plugin-react-hooks"
 import reactRefresh from "eslint-plugin-react-refresh"
-import eslintPluginTailwindcss from "eslint-plugin-tailwindcss"
+import eslintTailwindcss from "eslint-plugin-tailwindcss"
 import { defineConfig, globalIgnores } from "eslint/config"
 import globals from "globals"
 import tseslint from "typescript-eslint"
@@ -18,12 +20,17 @@ export default defineConfig([
       } satisfies PluginSettings,
     },
     files: ["**/*.{ts,tsx}"],
+    // Plugin registered only — no @shadcn/lint rules enabled yet.
+    // Enable rules per-entry under `rules` (e.g. "shadcn/no-restyle"):
+    // https://github.com/shadcn-ui/lint/blob/main/docs/rules.md
+    plugins: { shadcn },
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
-      eslintPluginTailwindcss.configs.recommended as CompatibleConfigArray,
+      jsxA11y.flatConfigs.recommended,
+      eslintTailwindcss.configs.recommended as CompatibleConfigArray,
     ],
     languageOptions: {
       globals: globals.browser,
@@ -41,6 +48,9 @@ export default defineConfig([
           ignoreRestSiblings: true,
         },
       ],
+      "shadcn/no-arbitrary-values": ["error", { allow: ["layout"] }],
+      "shadcn/no-restyle": ["error", { allow: ["layout"] }],
+      "shadcn/require-static-classes": "error",
     },
   },
   {
