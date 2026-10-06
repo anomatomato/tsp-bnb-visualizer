@@ -22,7 +22,7 @@ install:
 
 # Install pre-commit hooks
 pre_commit_setup:
-  pnpm -C {{frontend_dir}} exec lefthook install
+    lefthook install
 
 # Install frontend dependencies
 frontend_install:

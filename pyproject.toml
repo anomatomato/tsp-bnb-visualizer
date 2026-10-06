@@ -17,6 +17,7 @@ dev = [
   { include-group = "lint" },
   { include-group = "test" },
   { include-group = "types" },
+  "lefthook>=2.1.17",
 ]
 lint = [
   "pre-commit>=4.5.1",

@@ -2,7 +2,7 @@
 
 Research tool for visualizing a **TSP Branch-and-Bound** solver: HiGHS LP relaxation, lazy subtour-elimination cutting planes, most-fractional branching — and a React frontend that replays the search iteration by iteration.
 
-Static-only by design: the backend writes a complete, replayable run directory; no server required.
+Static-only by design: the backend writes a complete, replayable run directory.
 
 ## Repository layout
 
@@ -23,7 +23,7 @@ Requires Python 3.14+ and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync                        # install deps
-uv run python -m examples.run_tsplib   # solve eil51, export + open browser
+uv run examples.run_tsplib   # solve eil51, export + open browser
 ```
 
 Output lands in `output/runs/run_eil51_<timestamp>/`:
@@ -51,7 +51,7 @@ pnpm install
 pnpm dev                       # Vite dev server
 ```
 
-During development the app runs on a frozen run fixture (`src/mock/eil51-bnb-state.json` — copy a fresh `bnb_state.json` from a backend run). See `PLAN.md` for the frontend roadmap.
+During development the app runs on a frozen run fixture (`src/mock/eil51-bnb-state.json` — copy a fresh `bnb_state.json` from a backend run)..md` for the frontend roadmap.
 
 ## Verified results
 
