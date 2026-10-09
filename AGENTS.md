@@ -77,7 +77,7 @@ decisions.fix(edge_index_of(graph.edges, 0, 1), 1)  # NOT decisions.fix((0, 1), 
 ## Project structure
 
 - `tsp_bnb/` — algorithm package. The actual Python code (HiGHS, NetworkX, Pydantic).
-- `tsp_bnb/export/` — Pydantic export models, matplotlib/networkx SVG renderer, `BnBSerializer` (writes `bnb_state.json` + run directory).
+- `tsp_bnb/export/` — Pydantic export models, matplotlib/networkx SVG renderer, `BnBSerializer` (writes `bnb_state.json` + run directory), `viewer.py` (detached localhost server + `runs/index.json` catalog).
 - `examples/` — runnable scripts (`uv run python -m examples.run_tsplib`, eil51 default) and the TSPLIB loader (EUC_2D instances only). `examples/data/` holds the TSPLIB archive.
 - `frontend/` — React + Vite + pnpm visualizer (React Flow, shadcn/ui, Tailwind v4). See ARCHITECTURE.md for the `src/` layout.
 - `tests/` — pytest tests + `conftest.py`.

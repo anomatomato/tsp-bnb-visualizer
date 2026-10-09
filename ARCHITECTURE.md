@@ -1,4 +1,4 @@
-# BnB Visualizer Architecture
+# TSP BnB Visualizer Architecture
 
 ## Overview
 
@@ -47,9 +47,14 @@
 │    └── images/                                                │
 │        ├── relaxation_{node}.svg   (LP fractions)            │
 │        └── tour_{node}.svg         (incumbent/heuristic)     │
+│                                                              │
+│  export/viewer.py: detached localhost server +              │
+│  runs/index.json catalog (save order: run dir → server →     │
+│  catalog → browser tab)                                      │
 └──────────────────────────────────────────────────────────────┘
                         │
-                        │  frozen copy → frontend/src/mock/
+                        │  http://localhost:8123/?run={id}
+                        │  (dev: Vite /runs middleware)
                         ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  FRONTEND (React 19 + Vite + pnpm, in frontend/)             │
@@ -72,7 +77,7 @@
 ## Project Structure (actual)
 
 ```
-bnb-visualizer/
+tsp-bnb-visualizer/
 ├── pyproject.toml              # uv config; pytest/pyrefly/ruff settings
 ├── tsp_bnb/                    # algorithm package (TSP-specific)
 │   ├── bnb.py                  # TSPBnb — main search loop
@@ -222,17 +227,22 @@ Stick to this set (`10 20 30 50 80`) rather than arbitrary values. Alpha blends 
 uv run python -m examples.run_tsplib
         │
         ▼
-output/runs/run_eil51_{timestamp}/   (bnb_state.json, images/, index.html)
-        │
-        ├── browser opens index.html (links only — minimal)
-        │
-        └── copy bnb_state.json → frontend/src/mock/ (development fixture)
-                │
-                ▼
-        pnpm dev → React app: tree canvas, timeline replay, inspector
+search → serializer.save()   (owns the ordering)
+  1. write output/runs/run_{instance}_{timestamp}/
+     (bnb_state.json, images/, index.html)
+  2. ensure detached viewer server (localhost:8123, PID in output/.server.pid)
+  3. regenerate runs/index.json   (newest-first catalog, atomic write)
+  4. open browser tab   http://localhost:8123/?run={run_id}
 ```
 
-Later (research workflow): the app can load arbitrary `bnb_state.json` files via file-picker/drag-drop — no server needed.
+Invariant: when a tab loads `?run=<id>`, `<id>` is already in the catalog — the catalog is written between "run dir complete" and "tab opens", never before.
+
+- Viewer publishing is manual: `just publish` copies `frontend/dist` (`index.html` + `assets/`) into `output/`. Until then, `save()` opens the run-local stub page instead.
+- Server lifecycle: `just serve` (ensure/reuse + catalog refresh + URL), `just serve-stop` (stops only our tracked PID, never a foreign port occupant), or directly `python -m tsp_bnb.export.viewer [stop]`.
+- Frontend dev (`pnpm dev`) serves `output/runs` live through the custom `/runs` Vite middleware — no Python server needed. The catalog is refreshed only by `save(open_browser=True)` and the `viewer` module entry; headless exports and manual deletions leave it stale until refreshed.
+- `just clean` deletes all runs and regenerates an empty catalog.
+
+Later (research workflow): the app can load arbitrary `bnb_state.json` files via file-picker/drag-drop — no server needed (each run carries `started_at` itself).
 
 ---
 
@@ -259,5 +269,5 @@ Later (research workflow): the app can load arbitrary `bnb_state.json` files via
 
 ---
 
-_Last updated: 2026-09-16_
-_Project: BnB Visualizer_
+_Last updated: 2026-10-09_
+_Project: TSP BnB Visualizer_

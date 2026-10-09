@@ -1,4 +1,4 @@
-# BnB Visualizer
+# TSP BnB Visualizer
 
 Research tool for visualizing a **TSP Branch-and-Bound** solver: HiGHS LP relaxation, lazy subtour-elimination cutting planes, most-fractional branching — and a React frontend that replays the search iteration by iteration.
 

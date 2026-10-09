@@ -1,13 +1,14 @@
 [project]
-name = "bnb-visualizer"
+name = "tsp-bnb-visualizer"
 version = "0.1.0"
-description = "A generic branch-and-bound visualizer, e.g. for TSP"
+description = "A TSP branch-and-bound visualizer"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
   "highspy>=1.15.1",
   "matplotlib>=3.11.1",
   "networkx>=3.6.1",
+  "psutil>=7.2.2",
   "pydantic>=2.13.4",
   "scipy>=1.18.0",
 ]
@@ -17,9 +18,9 @@ dev = [
   { include-group = "lint" },
   { include-group = "test" },
   { include-group = "types" },
-  "lefthook>=2.1.17",
 ]
 lint = [
+  "lefthook>=2.1.17",
   "pre-commit>=4.5.1",
   "pyrefly>=1.1.1",
 ]

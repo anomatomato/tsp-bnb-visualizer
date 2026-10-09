@@ -1,7 +1,7 @@
 {
-  "name": "bnb-visualizer-frontend",
-  "private": true,
+  "name": "tsp-bnb-visualizer-frontend",
   "version": "0.0.1",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,6 +22,7 @@
     "lucide-react": "^1.52.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-error-boundary": "^6.1.6",
     "react-resizable-panels": "^4.14.2",
     "shadcn": "^4.21.1",
     "tailwindcss": "^4.3.3",
