@@ -1384,6 +1384,9 @@
   .items-start {
     align-items: flex-start;
   }
+  .justify-between {
+    justify-content: space-between;
+  }
   .justify-center {
     justify-content: center;
   }
@@ -1413,6 +1416,11 @@
   }
   .justify-self-end {
     justify-self: flex-end;
+  }
+  .truncate {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
   }
   .overflow-hidden {
     overflow: hidden;
@@ -2905,6 +2913,9 @@
   }
   .\[\&\>svg\]\:pointer-events-none > svg {
     pointer-events: none;
+  }
+  .\[\&\>svg\]\:ml-0 > svg {
+    margin-left: 0;
   }
   .\[\&\>svg\]\:size-3\! > svg {
     width: calc(var(--spacing) * 3) !important;
