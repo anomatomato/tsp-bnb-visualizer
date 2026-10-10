@@ -22,7 +22,7 @@ function AppShell() {
 
   return (
     <>
-      <title>TSP BnB ({runData.instance.name})</title>
+      <title>{`TSP BnB (${runData.instance.name})`}</title>
       <div className="flex h-svh flex-col">
         <Header />
         <main className="flex-1">
