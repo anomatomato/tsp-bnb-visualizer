@@ -1,4 +1,5 @@
 /* tslint:disable */
+
 /**
 /* This file was automatically generated from pydantic models by running pydantic2ts.
 /* Do not modify it by hand - just update the pydantic models and then re-run the script
@@ -29,6 +30,10 @@ export interface BnBRunData {
   tree: NodeVisData
   best_solutions: BestSolutionEntry[]
   processing_order: number[]
+  /**
+   * Wall-clock run start, tz-aware ISO 8601. New runs set it; runs exported before the field existed have None (catalog falls back to the run-id timestamp).
+   */
+  started_at?: string | null
 }
 /**
  * Serialized TSP instance with fixed node positions.

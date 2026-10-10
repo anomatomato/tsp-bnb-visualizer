@@ -1,12 +1,12 @@
 import { cn } from "cn"
-import { Check, Monitor, Moon, Sun } from "lucide-react"
+import { Monitor, Moon, Sun } from "lucide-react"
 
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
@@ -34,17 +34,24 @@ export function ModeToggle() {
         }
       />
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme("light")}>
-          <Sun /> Light {theme === "light" && <Check className="ml-auto" />}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuCheckboxItem
+          checked={theme === "light"}
+          onClick={() => setTheme("light")}
+        >
+          <Sun /> Light
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={theme === "dark"}
+          onClick={() => setTheme("dark")}
+        >
           <Moon /> Dark
-          {theme === "dark" && <Check className="ml-auto" />}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("system")}>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={theme === "system"}
+          onClick={() => setTheme("system")}
+        >
           <Monitor /> System
-          {theme === "system" && <Check className="ml-auto" />}
-        </DropdownMenuItem>
+        </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

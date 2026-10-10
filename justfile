@@ -39,9 +39,11 @@ test:
 types:
     uv run python -m scripts.generate_types
 
-# Cleanup run artifacts
+# Cleanup run artifacts (regenerates an empty catalog so open tabs see
+# "no runs" instead of a 404 error boundary)
 clean:
     rm -rf output/runs/*
+    uv run python -c "from tsp_bnb.export.viewer import write_run_index; write_run_index()"
 
 # Update everything relevant
 update-all: update-pre-commit update-python update-frontend
@@ -89,6 +91,20 @@ update-frontend *FLAGS:
 example:
     uv run python -m examples.run_tsplib
 
-# Generate tsplib eil51 mock for frontend development
-mock:
-    uv run python -m scripts.generate_mock
+# Build frontend and publish the viewer beside the run archive
+publish:
+  pnpm -C {{ frontend_dir }} build
+  rm -f output/index.html
+  rm -rf output/assets
+  cp -r frontend/dist/index.html frontend/dist/assets output/
+
+# Serve viewer + all runs (manual convenience; solver auto-starts one too).
+# Ensure/reuse the detached server, refresh the catalog, print the URL.
+# Watch live logs: tail -f output/.server.log
+# Raw foreground alternative: uv run python -m http.server --directory output 8123
+serve:
+    uv run python -m tsp_bnb.export.viewer
+
+# Stop the detached viewer server (idempotent)
+serve-stop:
+    uv run python -m tsp_bnb.export.viewer stop

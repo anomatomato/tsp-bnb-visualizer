@@ -9,23 +9,26 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { type FlatNode } from "@/lib/bnb"
+import { incumbentAt, toNodeMap } from "@/lib/bnb"
 import { resolveImage } from "@/lib/images"
-import type { BestSolutionEntry } from "@/types/api-types"
 import { statusBadgeClass } from "@/lib/status"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { useRunContext } from "@/context/run-context"
+import { useIterationContext } from "@/context/iteration-context"
 
-interface InspectorProps {
-  node?: FlatNode
-  incumbent: BestSolutionEntry | null
-}
-
-const svg = (path: string | null | undefined) => {
+const svg = (path: string | null | undefined, runId: string) => {
   if (!path) return null
-  return <img src={resolveImage(path) ?? ""} />
+  return <img alt={path} src={resolveImage(path, runId) ?? ""} />
 }
 
-export default function Inspector({ node, incumbent }: InspectorProps) {
+export default function Inspector() {
+  const { runData, runId } = useRunContext()
+  const { iteration } = useIterationContext()
+  const nodeMap = toNodeMap(runData)
+  const currentNodeId = runData.processing_order[iteration - 1]
+  const node = nodeMap.get(currentNodeId)
+  const incumbent = incumbentAt(runData, iteration)
+
   if (!node) {
     return <div>No existing node data</div>
   }
@@ -50,13 +53,14 @@ export default function Inspector({ node, incumbent }: InspectorProps) {
             <TabsTrigger value="heuristic">Heuristic</TabsTrigger>
           </TabsList>
           <TabsContent value="relaxed">
-            {svg(node.relaxed_solution?.image_path) ?? "No relaxed solution"}
+            {svg(node.relaxed_solution?.image_path, runId) ??
+              "No relaxed solution"}
           </TabsContent>
           <TabsContent value="incumbent">
-            {svg(incumbent?.image_path) ?? "No incumbent solution"}
+            {svg(incumbent?.image_path, runId) ?? "No incumbent solution"}
           </TabsContent>
           <TabsContent value="heuristic">
-            {svg(node.heuristic_solution?.image_path) ??
+            {svg(node.heuristic_solution?.image_path, runId) ??
               "No heuristic solution"}
           </TabsContent>
         </Tabs>

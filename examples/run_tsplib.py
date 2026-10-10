@@ -132,7 +132,7 @@ def run_eil51(*, open_browser: bool = True):
     return run_dir
 
 
-def run_st70():
+def run_st70(*, open_browser: bool = True):
     """st70: 70-city EUC_2D instance. Optimal tour cost = 675."""
     db = TspLibGraphInstanceDb()
     graph = db["st70"]
@@ -160,47 +160,13 @@ def run_st70():
         f"BnB should return the optimal solution for st70 (expected {optimal_cost}, got {solution.cost})"
     )
 
-    run_dir = bnb.save()
+    run_dir = bnb.save(open_browser=open_browser)
     logger.info("Run exported to %s", run_dir)
-
-
-def run_att48():
-    db = TspLibGraphInstanceDb()
-    graph = db["att48"]
-    instance = TSPInstance(graph=graph, name="att48")
-    serializer = BnBSerializer(instance)
-
-    bnb = TSPBnb(
-        instance=instance,
-        relaxation_cls=LPRelaxation,
-        node_queue=OpenNodeQueue(priority=best_bound_order),
-        branching_strategy=MostFractionalBranchingStrategy(),
-        root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
-        serializer=serializer,
-    )
-
-    solution = bnb.search(iteration_limit=10_000)
-    logger.info(
-        "Finished search with %d iterations.", bnb.progress_tracker.num_iterations
-    )
-
-    assert solution is not None, "BnB should return a solution"
-
-    optimal_cost = 10_628
-    assert solution.cost == optimal_cost, (
-        "BnB should return the optimal solution for att48"
-    )
-
-    run_dir = bnb.save()
-    logger.info("Run exported to %s", run_dir)
-    # assert bnb.progress_tracker.upper_bound() == 5, "The objective value should be 5."
-    # assert bnb.progress_tracker.lower_bound() == 5, "The bound should be 5."
 
 
 def main():
     run_eil51()
     run_st70()
-    run_att48()
 
 
 if __name__ == "__main__":

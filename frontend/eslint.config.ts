@@ -53,4 +53,14 @@ export default defineConfig([
       "react-refresh/only-export-components": "off",
     },
   },
+  {
+    // Disable for context files
+    files: [
+      "src/**/context/**/*.{ts,tsx}",
+      "src/components/theme-provider.tsx",
+    ],
+    rules: {
+      "react-refresh/only-export-components": "off",
+    },
+  },
 ])

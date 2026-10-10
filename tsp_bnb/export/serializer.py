@@ -32,8 +32,8 @@ class BnBSerializer:
     def __init__(
         self, instance: TSPInstance, output_root: Path = Path("output")
     ) -> None:
-        self._instance = instance
-        self._output_root = output_root
+        self._instance: TSPInstance = instance
+        self._output_root: Path = output_root
         self.positions = compute_kamada_kawai_positions(instance)
 
         # State collected during search
@@ -44,8 +44,13 @@ class BnBSerializer:
 
         # Run directory paths (computed upfront, created lazily on first render).
         # Computing paths here keeps the types as Path (not Path | None), so
-        # render calls stay clean — no Optional unwrapping needed.
-        ts = datetime.now().astimezone().strftime("%Y-%m-%dT%H-%M-%S")
+        # render calls stay clean — no Optional unwrapping needed. One clock
+        # read, two spellings: `started_at` goes into BnBRunData (the JSON is
+        # self-describing), `ts` into the filesystem-safe run dir name — the
+        # two can never drift apart.
+        now = datetime.now().astimezone()
+        self._started_at = now.isoformat(timespec="seconds")
+        ts = now.strftime("%Y-%m-%dT%H-%M-%S")
         self._run_dir: Path = self._output_root / "runs" / f"run_{instance.name}_{ts}"
         self._images_dir: Path = self._run_dir / "images"
         self._dirs_created: bool = False
@@ -196,9 +201,12 @@ class BnBSerializer:
         best_cost = (
             run_data.best_solutions[-1].cost if run_data.best_solutions else "N/A"
         )
-        html = f"""<!DOCTYPE html>
+        html = f"""
+        <!DOCTYPE html>
         <html>
-        <head><title>BnB Run — {run_data.instance.name}</title></head>
+        <head>
+            <title>BnB Run — {run_data.instance.name}</title>
+        </head>
         <body>
             <h1>BnB Run — {run_data.instance.name}</h1>
             <p>Nodes in tree: {len(run_data.processing_order)}</p>
@@ -210,13 +218,14 @@ class BnBSerializer:
             </ul>
             <p><em>Frontend not yet built. This is a placeholder index page.</em></p>
         </body>
-        </html>"""
-        (run_dir / "index.html").write_text(html)
+        </html>
+        """
+        (run_dir / "index.html").write_text(html, encoding="utf-8")
 
     # --- Final save ---
 
     def save(self, *, open_browser: bool = True) -> Path:
-        """Write bnb_state.json + index.html, optionally open browser. Return run dir."""
+        """Write bnb_state.json + index.html, optionally open the viewer. Return run dir."""
         if self._root is None:
             raise ValueError("No nodes to serialize.")
 
@@ -225,19 +234,43 @@ class BnBSerializer:
             tree=self._root,
             best_solutions=self._best_solutions,
             processing_order=self._processing_order,
+            started_at=self._started_at,
         )
+        # A run with no rendered SVG (e.g. an infeasible root) never created dirs.
+        self._run_dir.mkdir(parents=True, exist_ok=True)
         json_path = self._run_dir / "bnb_state.json"
-        json_path.write_text(run_data.model_dump_json(indent=2))
+        json_path.write_text(run_data.model_dump_json(indent=2), encoding="utf-8")
         logger.info(f"BnB state saved to {json_path}")
 
         self._write_index_html(self._run_dir, run_data)
 
         if open_browser:
-            try:
-                webbrowser.open_new_tab(str(self._run_dir / "index.html"))
-            except webbrowser.Error as e:
-                logger.warning(
-                    f"Could not open browser: {e}. Open {self._run_dir / 'index.html'} manually."
-                )
+            self._open_in_viewer()
 
         return self._run_dir
+
+    def _open_in_viewer(self) -> None:
+        """Best-effort viewer delivery: ensure server, refresh catalog, open tab.
+
+        The ordering is the invariant the viewer depends on: by the time the
+        tab loads `?run=<id>`, `<id>` is already in the catalog. Failures must
+        not crash save() — the artifacts are already on disk at this point.
+        """
+        try:
+            # Deferred import: a top-level one would make the package __init__
+            # chain import this module while `python -m tsp_bnb.export.viewer`
+            # is executing it — runpy then double-imports and warns.
+            from .viewer import ensure_viewer, write_run_index
+
+            base = ensure_viewer()
+            if base is None:
+                # No published viewer: open the run-local stub page instead.
+                if not webbrowser.open_new_tab(str(self._run_dir / "index.html")):
+                    logger.warning("Browser refused to open the stub page.")
+                return
+            write_run_index()
+            url = f"{base}/?run={self._run_dir.name}"
+            if not webbrowser.open_new_tab(url):
+                logger.warning("Browser refused to open %s.", url)
+        except (OSError, webbrowser.Error) as e:
+            logger.warning("Viewer plumbing failed (run is saved): %s", e)

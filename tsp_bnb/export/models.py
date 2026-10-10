@@ -104,3 +104,11 @@ class BnBRunData(BaseModel):
     tree: NodeVisData
     best_solutions: list[BestSolutionEntry]
     processing_order: list[int]
+    started_at: str | None = Field(
+        default=None,
+        description=(
+            "Wall-clock run start, tz-aware ISO 8601. New runs set it; runs "
+            "exported before the field existed have None (catalog falls back "
+            "to the run-id timestamp)."
+        ),
+    )

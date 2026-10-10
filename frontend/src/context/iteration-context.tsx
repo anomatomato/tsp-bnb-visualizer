@@ -15,9 +15,9 @@ interface IterationContextValue {
 }
 
 // Create context
-export const IterationContext = createContext<
-  IterationContextValue | undefined
->(undefined)
+const IterationContext = createContext<IterationContextValue | undefined>(
+  undefined
+)
 
 export function IterationProvider({
   children,

@@ -198,7 +198,8 @@ class TSPBnb:
         created retroactively here.
 
         Args:
-            open_browser: open the run's index.html in a browser tab after saving.
+            open_browser: ensure the viewer server, refresh the run catalog,
+                and open this run in a browser tab after saving.
 
         Returns:
             The run directory containing the exported artifacts.

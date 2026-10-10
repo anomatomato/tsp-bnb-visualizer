@@ -96,13 +96,11 @@ export function BnBTreeNode({
         className={cn(
           "relative flex size-12 flex-col place-content-center items-center rounded-full text-foreground",
           statusNodeClass(node.status),
-          !isProcessed ? "opacity-30" : "",
-          isCurrent
-            ? [
-                "shadow-[0_0_--spacing(6)_(--tw-shadow-color)]",
-                statusCurrentNodeClass(node.status),
-              ]
-            : ""
+          !isProcessed && "opacity-30",
+          isCurrent && [
+            "shadow-[0_0_--spacing(6)_(--tw-shadow-color)]",
+            statusCurrentNodeClass(node.status),
+          ]
         )}
         // title={`#${node.node_id} · ${node.status}`}
         // className="react-flow__node-default"
@@ -121,7 +119,7 @@ export function BnBTreeNode({
             //   n glyphs occupy n × 0.62em; 44px ÷ that = the px-per-em
             //   (i.e. font-size) that makes the run exactly fill the circle.
             // · 0.62 is the measured per-glyph em width of this font
-            "text-[min(1rem,calc((--spacing(11))/(var(--n)*0.62)))] font-semibold tabular-nums"
+            "text-[min(1rem,calc((--spacing(11.5))/(var(--n)*0.62)))] font-semibold tabular-nums"
           }
           style={
             {
@@ -137,7 +135,7 @@ export function BnBTreeNode({
             labelPositionClass[direction]
           )}
         >
-          {node.processed_at ?? "-"}
+          {node.processed_at}
         </span>
       </button>
       {/* Handles stay mounted (edges anchor to them) but invisible */}

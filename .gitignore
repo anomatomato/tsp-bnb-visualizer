@@ -227,6 +227,10 @@ __marimo__/
 PLAN.md
 .cortexkit
 .opencode
-output/
 goals/
 plans/
+
+# Dist
+output/*
+!output/index.html
+!output/assets

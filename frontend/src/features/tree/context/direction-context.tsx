@@ -15,9 +15,9 @@ interface DirectionContextValue {
 }
 
 // Create context
-export const DirectionContext = createContext<
-  DirectionContextValue | undefined
->(undefined)
+const DirectionContext = createContext<DirectionContextValue | undefined>(
+  undefined
+)
 
 export function DirectionProvider({
   children,
