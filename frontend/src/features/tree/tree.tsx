@@ -72,8 +72,17 @@ function BnBTreeCanvas() {
       minZoom={0.1}
       fitView
     >
-      <MiniMap nodeComponent={MiniMapNode} pannable zoomable />
-      <Controls showInteractive={false} className="shadow-lg">
+      <MiniMap
+        nodeComponent={MiniMapNode}
+        pannable
+        zoomable
+        position="bottom-left"
+      />
+      <Controls
+        showInteractive={false}
+        position="bottom-right"
+        className="shadow-lg"
+      >
         <ControlButton onClick={handleToggleLayout} title="Change Layout">
           {direction === "TB" ? <ArrowLeftRight /> : <ArrowDownUp />}
         </ControlButton>
