@@ -6,6 +6,14 @@
 */
 
 /**
+ * Why a node was pruned.
+ */
+export type PruneReason = "node_bound" | "global_bound"
+/**
+ * Why a node is infeasible.
+ */
+export type InfeasibleReason = "lp_infeasible" | "subtours"
+/**
  * Enumeration of possible states for a BnB node.
  */
 export type NodeStatus = "Integer" | "Infeasible" | "Pruned" | "Branched"
@@ -34,6 +42,7 @@ export interface BnBRunData {
    * Wall-clock run start, tz-aware ISO 8601. New runs set it; runs exported before the field existed have None (catalog falls back to the run-id timestamp).
    */
   started_at?: string | null
+  solver_config: SolverConfigData
 }
 /**
  * Serialized TSP instance with fixed node positions.
@@ -72,13 +81,29 @@ export interface NodeVisData {
    */
   parent_id: number | null
   /**
-   * The lower bound from the relaxed solution. May also be None if it got pruned.
+   * Queue-wide global lower bound (min LP bound over open nodes) at the iteration this node was processed. NOT this node's own bound — that is relaxed_solution.objective. None for nodes never processed.
    */
   lb: number | null
   /**
-   * The upper bound of the node from the heuristic solution. May also be None if there is no heuristic solution or it got pruned.
+   * Incumbent (best tour cost so far) when this node's fate was decided: at processing for processed nodes, at the prune iteration for globally pruned queue leftovers. None if no incumbent existed.
    */
   ub: number | null
+  /**
+   * Iteration of the prune decision. Equals processed_at for per-node prunes; the global-prune iteration for queue leftovers.
+   */
+  pruned_at: number | null
+  /**
+   * Why pruned.
+   */
+  prune_reason: PruneReason | null
+  /**
+   * Why infeasible.
+   */
+  infeasible_reason: InfeasibleReason | null
+  /**
+   * Edge index this node branched on (status Branched only).
+   */
+  branched_edge: number | null
   depth: number
   /**
    * The iteration when the node was created.
@@ -131,4 +156,46 @@ export interface TourSnapshot {
    * Rendered SVG reference for the tour.
    */
   image_path: string | null
+}
+/**
+ * Strategy components used for the BnB run.
+ */
+export interface SolverConfigData {
+  /**
+   * OpenNodeQueue policy, e.g. `best_bound_order`
+   */
+  search_policy: string
+  /**
+   * Used strategy for choosing the fractional edge to branch on, e.g. `MostFractional`
+   */
+  branching_strategy: string
+  /**
+   * Used relaxation solver
+   */
+  relaxation: string
+  /**
+   * Used heuristic used at BnB root, e.g. `TwoOptImproved`
+   */
+  root_heuristics: string
+}
+/**
+ * Which strategy components produced this run (names).
+ */
+export interface SolverConfigData1 {
+  /**
+   * OpenNodeQueue policy, e.g. `best_bound_order`
+   */
+  search_policy: string
+  /**
+   * Used strategy for choosing the fractional edge to branch on, e.g. `MostFractional`
+   */
+  branching_strategy: string
+  /**
+   * Used relaxation solver
+   */
+  relaxation: string
+  /**
+   * Used heuristic used at BnB root, e.g. `TwoOptImproved`
+   */
+  root_heuristics: string
 }
