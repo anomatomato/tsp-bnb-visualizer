@@ -17,14 +17,17 @@ import logging
 from pathlib import Path
 
 from .bnb_nodes import BnBNode, NodeFactory, NodeStatus
+from .branching_decisions import branched_edge_index
 from .branching_strategy import BranchingStrategy
 from .cut_pool import CutPool
 from .data_schema import TSPInstance, TSPSolution
 from .export import BnBSerializer
+from .export.models import SolverConfigData
 from .heuristics import Heuristics
 from .open_nodes import OpenNodeQueue
 from .progress_tracker import ProgressTracker
-from .relaxation import Relaxation, RelaxedSolution
+from .relaxation import Relaxation
+from .relaxed_solution import RelaxedSolution
 from .solution_pool import SolutionPool
 
 logger = logging.getLogger(__name__)
@@ -137,7 +140,16 @@ class TSPBnb:
             self.node_queue.enqueue(child)
 
         node.status = NodeStatus.BRANCHED
+        node.branched_edge = branched_edge_index(branches)
         return NodeStatus.BRANCHED
+
+    def _solver_config(self) -> SolverConfigData:
+        return SolverConfigData(
+            search_policy=self.node_queue.policy_name,
+            branching_strategy=type(self.branching_strategy).__name__,
+            relaxation=self.relaxation.__name__,
+            root_heuristics=type(self.root_heuristics).__name__,
+        )
 
     def search(self, iteration_limit: int = 10_000) -> TSPSolution | None:
         """
@@ -178,7 +190,7 @@ class TSPBnb:
                 logger.info("Global prune at iteration %d", iteration)
                 for pruned_node in self.node_queue.nodes_in_queue():
                     pruned_node.status = NodeStatus.PRUNED
-                    self.progress_tracker.on_node_pruned(
+                    self.progress_tracker.on_node_global_pruned(
                         pruned_node, self.solutions.best_solution()
                     )
                 break
@@ -209,4 +221,6 @@ class TSPBnb:
                 "No serializer attached: construct TSPBnb with "
                 "serializer=BnBSerializer(instance) to enable export."
             )
-        return self.serializer.save(open_browser=open_browser)
+        return self.serializer.save(
+            open_browser=open_browser, solver_config=self._solver_config()
+        )

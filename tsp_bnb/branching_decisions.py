@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 
 
 def edge_index_of(edges: Iterable[tuple[int, int]], u: int, v: int) -> int:
@@ -140,3 +140,14 @@ class BranchingDecisions:
         left.fix(edge_index, 0)
         right.fix(edge_index, 1)
         return left, right
+
+
+def branched_edge_index(branches: Sequence[BranchingDecisions]) -> int | None:
+    """Edge index a pair of sibling branch decisions differ on (0 vs 1)."""
+    if len(branches) != 2:
+        return None
+    (a, b) = branches
+    for i, (va, vb) in enumerate(zip(a, b)):
+        if va != vb:
+            return i
+    return None

@@ -11,9 +11,11 @@ You should implement your own strategies by subclassing `BranchingStrategy`.
 """
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Sequence
+from typing import override
 
-from .bnb_nodes import BnBNode, BranchingDecisions
+from .bnb_nodes import BnBNode
+from .branching_decisions import BranchingDecisions
 
 
 class BranchingStrategy(ABC):
@@ -25,7 +27,7 @@ class BranchingStrategy(ABC):
     """
 
     @abstractmethod
-    def make_branching_decisions(self, node: BnBNode) -> Iterable[BranchingDecisions]:
+    def make_branching_decisions(self, node: BnBNode) -> Sequence[BranchingDecisions]:
         """
         Return an iterable of `BranchingDecisions` to create child nodes.
         If no decisions can be made (all variables fixed), return an empty iterable.
@@ -38,6 +40,7 @@ class FirstUndecidedBranchingStrategy(BranchingStrategy):
     Branch on the first variable that has not yet been fixed.
     """
 
+    @override
     def make_branching_decisions(self, node: BnBNode) -> tuple[BranchingDecisions, ...]:
         # find the smallest index i where no decision has been made
         first_unfixed = min(
@@ -57,6 +60,7 @@ class FirstFractionalBranchingStrategy(BranchingStrategy):
 
     _FRACTIONAL_TOL = 1e-8
 
+    @override
     def make_branching_decisions(self, node: BnBNode) -> tuple[BranchingDecisions, ...]:
         # find first fractional index in relaxed_solution.edge_fractions
         frac_idx = min(
@@ -99,6 +103,7 @@ class MostFractionalBranchingStrategy(BranchingStrategy):
             candidate[0],  # lower index
         )
 
+    @override
     def make_branching_decisions(self, node: BnBNode) -> tuple[BranchingDecisions, ...]:
         graph = node.relaxed_solution.instance.graph
         edge_weights = tuple(

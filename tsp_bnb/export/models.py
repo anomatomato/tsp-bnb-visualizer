@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 
-from ..bnb_nodes import NodeStatus
+from ..bnb_nodes import InfeasibleReason, NodeStatus, PruneReason
 
 
 class NodePosition(BaseModel):
@@ -57,11 +57,31 @@ class NodeVisData(BaseModel):
     parent_id: int | None = Field(..., description="The ID of the parent node.")
     lb: float | None = Field(
         ...,
-        description="The lower bound from the relaxed solution. May also be None if it got pruned.",
+        description=(
+            "Queue-wide global lower bound (min LP bound over open nodes) at the "
+            "iteration this node was processed. NOT this node's own bound — that "
+            "is relaxed_solution.objective. None for nodes never processed."
+        ),
     )
     ub: float | None = Field(
         ...,
-        description="The upper bound of the node from the heuristic solution. May also be None if there is no heuristic solution or it got pruned.",
+        description=(
+            "Incumbent (best tour cost so far) when this node's fate was decided: "
+            "at processing for processed nodes, at the prune iteration for "
+            "globally pruned queue leftovers. None if no incumbent existed."
+        ),
+    )
+    pruned_at: int | None = Field(
+        ...,
+        description="Iteration of the prune decision. Equals processed_at for per-node prunes; the global-prune iteration for queue leftovers.",
+    )
+    prune_reason: PruneReason | None = Field(..., description="Why pruned.")
+    infeasible_reason: InfeasibleReason | None = Field(
+        ..., description="Why infeasible."
+    )
+    branched_edge: int | None = Field(
+        ...,
+        description="Edge index this node branched on (status Branched only).",
     )
     depth: int
     created_at: int = Field(..., description="The iteration when the node was created.")
@@ -97,6 +117,22 @@ class BestSolutionEntry(BaseModel):
     )
 
 
+class SolverConfigData(BaseModel):
+    """Which strategy components produced this run (names)."""
+
+    search_policy: str = Field(
+        ..., description="OpenNodeQueue policy, e.g. `best_bound_order`"
+    )
+    branching_strategy: str = Field(
+        ...,
+        description="Used strategy for choosing the fractional edge to branch on, e.g. `MostFractional`",
+    )
+    relaxation: str = Field(..., description="Used relaxation solver")
+    root_heuristics: str = Field(
+        ..., description="Used heuristic used at BnB root, e.g. `TwoOptImproved`"
+    )
+
+
 class BnBRunData(BaseModel):
     """Top-level JSON structure written to bnb_state.json."""
 
@@ -111,4 +147,7 @@ class BnBRunData(BaseModel):
             "exported before the field existed have None (catalog falls back "
             "to the run-id timestamp)."
         ),
+    )
+    solver_config: SolverConfigData = Field(
+        ..., description="Strategy components used for the BnB run."
     )

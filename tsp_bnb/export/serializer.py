@@ -5,7 +5,7 @@ import webbrowser
 from datetime import datetime
 from pathlib import Path
 
-from ..bnb_nodes import BnBNode
+from ..bnb_nodes import BnBNode, InfeasibleReason, NodeStatus, PruneReason
 from ..data_schema import TSPInstance, TSPSolution
 from .models import (
     BestSolutionEntry,
@@ -15,6 +15,7 @@ from .models import (
     NodePosition,
     NodeVisData,
     RelaxedSnapshot,
+    SolverConfigData,
     TourSnapshot,
 )
 from .renderer import compute_kamada_kawai_positions, render_lp_solution, render_tour
@@ -71,6 +72,10 @@ class BnBSerializer:
             relaxed_solution=None,
             heuristic_solution=None,
             fixed_edges=None,
+            pruned_at=None,
+            prune_reason=None,
+            infeasible_reason=None,
+            branched_edge=None,
             children=[],
         )
         if node.parent_id is None:
@@ -92,6 +97,22 @@ class BnBSerializer:
         data.status = node.status
         # Per-edge fixation state for frontend tooltips
         data.fixed_edges = list(node.branching_decisions)
+
+        match node.status:
+            case NodeStatus.PRUNED:
+                data.pruned_at = iteration  # == processed_at; harmless duplication
+                data.prune_reason = PruneReason.NODE_BOUND
+            case NodeStatus.INFEASIBLE:
+                data.infeasible_reason = (
+                    InfeasibleReason.LP_INFEASIBLE
+                    if node.relaxed_solution.is_infeasible()
+                    else InfeasibleReason.SUBTOURS
+                )
+            case NodeStatus.BRANCHED:
+                data.branched_edge = node.branched_edge
+            case _:
+                pass
+
         self._record_relaxed_snapshot(data, node)
 
     def _record_relaxed_snapshot(self, data: NodeVisData, node: BnBNode) -> None:
@@ -119,20 +140,27 @@ class BnBSerializer:
             image_path=f"images/{filename}",
         )
 
-    def on_node_pruned(
+    def on_node_global_pruned(
         self,
         node: BnBNode,
+        *,
+        iteration: int,
+        incumbent: float | None = None,
     ) -> None:
         """Called when a queue-leftover node is pruned (global prune at end).
 
-        These nodes were never processed, so no processing bookkeeping applies:
-        no processing_order entry, no processed_at, no ub. Their creation-time
-        LP is still real data — record fixed edges and the relaxed snapshot so
-        the inspector can show what the search skipped.
+        These nodes were never processed: no processing_order entry and no
+        processed_at. The incumbent at the global-prune decision is exported
+        as `ub`, and `pruned_at` records the prune iteration. Their
+        creation-time LP is still real data — record fixed edges and the
+        relaxed snapshot so the inspector can show what the search skipped.
         """
         data = self._node_data[node.node_id]
         data.status = node.status  # NodeStatus.PRUNED
         data.fixed_edges = list(node.branching_decisions)
+        data.ub = incumbent
+        data.pruned_at = iteration
+        data.prune_reason = PruneReason.GLOBAL_BOUND
         self._record_relaxed_snapshot(data, node)
 
     def on_heuristic_solution(
@@ -224,7 +252,9 @@ class BnBSerializer:
 
     # --- Final save ---
 
-    def save(self, *, open_browser: bool = True) -> Path:
+    def save(
+        self, *, open_browser: bool = True, solver_config: SolverConfigData
+    ) -> Path:
         """Write bnb_state.json + index.html, optionally open the viewer. Return run dir."""
         if self._root is None:
             raise ValueError("No nodes to serialize.")
@@ -235,6 +265,7 @@ class BnBSerializer:
             best_solutions=self._best_solutions,
             processing_order=self._processing_order,
             started_at=self._started_at,
+            solver_config=solver_config,
         )
         # A run with no rendered SVG (e.g. an infeasible root) never created dirs.
         self._run_dir.mkdir(parents=True, exist_ok=True)

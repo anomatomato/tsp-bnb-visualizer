@@ -14,7 +14,7 @@ You will not modify this file directly; instead, focus on supplying your own
 from __future__ import annotations
 
 from collections.abc import Callable
-from enum import Enum
+from enum import Enum, StrEnum, auto
 
 from .branching_decisions import BranchingDecisions
 from .cut_pool import CutPool
@@ -32,6 +32,20 @@ class NodeStatus(Enum):
     INFEASIBLE = "Infeasible"
     PRUNED = "Pruned"
     BRANCHED = "Branched"
+
+
+class PruneReason(StrEnum):
+    """Why a node was pruned."""
+
+    NODE_BOUND = auto()  # own LP bound >= incumbent
+    GLOBAL_BOUND = auto()  # queue-wide min bound >= incumbent (leftover)
+
+
+class InfeasibleReason(StrEnum):
+    """Why a node is infeasible."""
+
+    LP_INFEASIBLE = auto()  # fixations left the LP unsolvable
+    SUBTOURS = auto()  # integral but >= 2 disconnected subtours
 
 
 class BnBNode:
@@ -54,6 +68,7 @@ class BnBNode:
         "_branching_decisions",
         "_heuristic_solution",
         "_relaxed_solution",
+        "branched_edge",
         "depth",
         "node_id",
         "parent_id",
@@ -76,6 +91,7 @@ class BnBNode:
         self.node_id = node_id
         self.parent_id = parent_id
         self.status: NodeStatus | None = None
+        self.branched_edge: int | None = None
 
     def __lt__(self, other: BnBNode) -> bool:
         # nodes compare by ID for deterministic ordering in priority queues

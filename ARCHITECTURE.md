@@ -150,16 +150,37 @@ BnBRunData
 ├── instance: InstanceData          # name, nodes[{id,x,y}], edges[{u,v,weight}]
 ├── tree: NodeVisData (recursive)
 │   ├── node_id, parent_id, depth
-│   ├── lb, ub (float | None)
-│   ├── created_at, processed_at    # iteration numbers
-│   ├── status: NodeStatus          # branched|integer|pruned|infeasible (None until processed)
+│   ├── lb                           # queue-wide global LB at processing time
+│   │                               # (NOT the node's own bound — that is
+│   │                               # relaxed_solution.objective)
+│   ├── ub                           # incumbent when the node's fate was
+│   │                               # decided: at processing, or at the
+│   │                               # global-prune iteration for leftovers
+│   ├── created_at, processed_at     # iteration numbers
+│   ├── pruned_at                    # prune iteration (== processed_at for
+│   │                               # node-bound prunes; global-prune iter
+│   │                               # for queue leftovers)
+│   ├── status: NodeStatus           # branched|integer|pruned|infeasible (None until decided)
+│   ├── prune_reason?                # node_bound | global_bound (Pruned only)
+│   ├── infeasible_reason?           # lp_infeasible | subtours (Infeasible only)
+│   ├── branched_edge?               # edge index this node branched on (Branched only)
 │   ├── relaxed_solution?: RelaxedSnapshot   # edge_fractions, objective, is_integral_tour, image_path
 │   ├── heuristic_solution?: TourSnapshot     # edge_selection, cost, image_path
-│   ├── fixed_edges: (0|1|null)[]   # per edge index: free/out/in
+│   ├── fixed_edges: (0|1|null)[]    # per edge index: free/out/in
 │   └── children: NodeVisData[]
 ├── best_solutions: [{iteration, cost, edge_selection, image_path}]
-└── processing_order: [node_id, ...]          # slider position → processed node
+├── processing_order: [node_id, ...]          # slider position → processed node
+├── started_at?                     # tz-aware ISO-8601 run start (None for pre-field runs)
+└── solver_config                   # search_policy, branching_strategy, relaxation, root_heuristics
 ```
+
+Node-outcome semantics: `prune_reason` distinguishes per-node bound prunes
+(processed nodes whose own LP bound lost to the incumbent) from global-bound
+leftovers (queue nodes pruned together when the queue-wide minimum bound
+certified optimality). `infeasible_reason` distinguishes an unsolvable LP
+(`lp_infeasible`, fixations conflict with degree constraints) from an integral
+but disconnected solution (`subtours`). `solver_config` records which strategy
+components produced the run, so the frontend can later display them.
 
 City positions are included in `InstanceData.nodes`, so the frontend can render tours/LP solutions itself if desired (optional `TourSvg`, see PLAN).
 

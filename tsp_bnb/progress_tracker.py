@@ -79,10 +79,16 @@ class ProgressTracker:
                 sol, iteration=self.num_iterations
             )
 
-    def on_node_pruned(self, node: BnBNode, best_solution: TSPSolution | None) -> None:
-        """Called whenever a node is pruned."""
+    def on_node_global_pruned(
+        self, node: BnBNode, best_solution: TSPSolution | None
+    ) -> None:
+        """Called whenever a node is globally pruned."""
         if self._serializer is not None:
-            self._serializer.on_node_pruned(node)
+            self._serializer.on_node_global_pruned(
+                node,
+                iteration=self.num_iterations,
+                incumbent=best_solution.cost if best_solution else None,
+            )
 
     def start_search(self) -> None:
         """Initialize search reporting and print header."""

@@ -53,6 +53,11 @@ class OpenNodeQueue:
         """Return number of open nodes."""
         return len(self._queue)
 
+    @property
+    def policy_name(self) -> str:
+        """Name of the priority function ('best_bound_order', 'depth_first_order', ...)"""
+        return self._priority.__name__
+
     def enqueue(self, node: BnBNode) -> None:
         """Add `node`; equal priorities retain insertion order."""
         entry = _QueueEntry(
