@@ -29,7 +29,7 @@ repos:
         exclude: "^tests"
 
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.12.23
+    rev: 0.13.0
     hooks:
       # Update the uv lockfile
       - id: uv-lock
@@ -51,7 +51,7 @@ repos:
         additional_dependencies: [black==26.*]
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: "v3.9.9"
+    rev: "v3.9.10"
     hooks:
       - id: prettier
         types_or: [yaml, markdown, html, css, scss, javascript, json]
@@ -59,7 +59,7 @@ repos:
         exclude: "^(tests|frontend/)"
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.10
+    rev: v0.17.0
     hooks:
       # Run the linter
       - id: ruff-check
