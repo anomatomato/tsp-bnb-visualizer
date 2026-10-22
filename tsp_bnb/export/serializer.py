@@ -12,6 +12,7 @@ from .models import (
     BnBRunData,
     EdgeData,
     InstanceData,
+    IterationEntry,
     NodePosition,
     NodeVisData,
     RelaxedSnapshot,
@@ -41,6 +42,7 @@ class BnBSerializer:
         self._root: NodeVisData | None = None
         self._node_data: dict[int, NodeVisData] = {}
         self._best_solutions: list[BestSolutionEntry] = []
+        self._iteration_entries: list[IterationEntry] = []
         self._processing_order: list[int] = []
 
         # Run directory paths (computed upfront, created lazily on first render).
@@ -71,7 +73,7 @@ class BnBSerializer:
             processed_at=None,
             relaxed_solution=None,
             heuristic_solution=None,
-            fixed_edges=None,
+            fixed_edges=[],
             pruned_at=None,
             prune_reason=None,
             infeasible_reason=None,
@@ -89,6 +91,16 @@ class BnBSerializer:
     ) -> None:
         """Called when a node is processed. Record bounds, render LP SVG."""
         self._processing_order.append(node.node_id)
+        self._iteration_entries.append(
+            IterationEntry(
+                node_id=node.node_id,
+                node_lb=node.relaxed_solution.lower_bound
+                if not node.relaxed_solution.is_infeasible()
+                else None,
+                global_lb=lb,
+                incumbent=ub,
+            )
+        )
 
         data = self._node_data[node.node_id]
         data.processed_at = iteration
@@ -155,6 +167,8 @@ class BnBSerializer:
         creation-time LP is still real data — record fixed edges and the
         relaxed snapshot so the inspector can show what the search skipped.
         """
+        self._iteration_entries[-1].global_pruned_node_ids.append(node.node_id)
+
         data = self._node_data[node.node_id]
         data.status = node.status  # NodeStatus.PRUNED
         data.fixed_edges = list(node.branching_decisions)
@@ -264,6 +278,7 @@ class BnBSerializer:
             tree=self._root,
             best_solutions=self._best_solutions,
             processing_order=self._processing_order,
+            iterations=self._iteration_entries,
             started_at=self._started_at,
             solver_config=solver_config,
         )

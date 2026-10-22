@@ -37,6 +37,7 @@ export interface BnBRunData {
   instance: InstanceData
   tree: NodeVisData
   best_solutions: BestSolutionEntry[]
+  iterations: IterationEntry[]
   processing_order: number[]
   /**
    * Wall-clock run start, tz-aware ISO 8601. New runs set it; runs exported before the field existed have None (catalog falls back to the run-id timestamp).
@@ -128,7 +129,7 @@ export interface NodeVisData {
   /**
    * Per-edge branching state: None = free, 0 = fixed out, 1 = fixed in. Enables frontend tooltips showing why x_ij is 0/1 (LP choice vs branching fixation)
    */
-  fixed_edges: (number | null)[] | null
+  fixed_edges: (number | null)[]
   /**
    * Children of the node.
    */
@@ -156,6 +157,31 @@ export interface TourSnapshot {
    * Rendered SVG reference for the tour.
    */
   image_path: string | null
+}
+/**
+ * Search state after one iteration
+ */
+export interface IterationEntry {
+  /**
+   * Processed node this iteration
+   */
+  node_id: number
+  /**
+   * Queue-wide lower bound after the iteration; None = queue empty
+   */
+  global_lb: number | null
+  /**
+   * Node lower bound from its relaxation. None for an LP-infeasible processed node
+   */
+  node_lb: number | null
+  /**
+   * Best known tour cost after the iteration
+   */
+  incumbent: number | null
+  /**
+   * Leftovers globally pruned at this iteration. Normally empty; the final iteration carries the whole remaining queue.
+   */
+  global_pruned_node_ids?: number[]
 }
 /**
  * Strategy components used for the BnB run.

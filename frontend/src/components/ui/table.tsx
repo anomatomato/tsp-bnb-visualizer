@@ -3,10 +3,11 @@ import { cn } from "cn"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div
-      data-slot="table-container"
-      className="relative w-full overflow-x-auto"
-    >
+    // No overflow here: a wrapper-side scroll container would swallow the
+    // horizontal axis (w-full child never overflows it) and hijack sticky
+    // positioning from the real scroller. Parents own horizontal overflow —
+    // wrap wide tables in an `overflow-auto` div.
+    <div data-slot="table-container" className="relative w-full">
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}

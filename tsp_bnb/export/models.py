@@ -99,7 +99,7 @@ class NodeVisData(BaseModel):
     heuristic_solution: TourSnapshot | None = Field(
         ..., description="Feasible tour snapshot from the heuristic, if one was found."
     )
-    fixed_edges: list[int | None] | None = Field(
+    fixed_edges: list[int | None] = Field(
         ...,
         description="Per-edge branching state: None = free, 0 = fixed out, 1 = fixed in. Enables frontend tooltips showing why x_ij is 0/1 (LP choice vs branching fixation)",
     )
@@ -114,6 +114,27 @@ class BestSolutionEntry(BaseModel):
     edge_selection: list[int]
     image_path: str | None = Field(
         ..., description="Rendered SVG reference for the best tour."
+    )
+
+
+class IterationEntry(BaseModel):
+    """Search state after one iteration"""
+
+    node_id: int = Field(..., description="The node processed this iteration")
+    global_lb: float | None = Field(
+        ...,
+        description="Queue-wide lower bound after the iteration; None = queue empty",
+    )
+    node_lb: float | None = Field(
+        ...,
+        description="Node lower bound from its relaxation. None for an LP-infeasible processed node",
+    )
+    incumbent: float | None = Field(
+        ..., description="Best known tour cost after the iteration"
+    )
+    global_pruned_node_ids: list[int] = Field(
+        default_factory=list,
+        description="Leftovers globally pruned at this iteration. Normally empty; the final iteration carries the whole remaining queue.",
     )
 
 
@@ -139,6 +160,7 @@ class BnBRunData(BaseModel):
     instance: InstanceData
     tree: NodeVisData
     best_solutions: list[BestSolutionEntry]
+    iterations: list[IterationEntry]
     processing_order: list[int]
     started_at: str | None = Field(
         default=None,

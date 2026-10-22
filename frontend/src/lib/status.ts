@@ -2,11 +2,12 @@ import type { NodeStatus } from "@/types/api-types"
 
 /** status descriptions for tooltip content */
 export const statusDescriptions: Record<NodeStatus, string> = {
-  Branched: "Fractional LP relaxation - search split on a fractional edge",
-  Integer: "Integral LP relaxation - candidate incumbent",
-  Infeasible: "LP relaxation is proven to be infeasible",
+  Branched: "Fractional LP relaxation - the search split on a fractional edge",
+  Integer: "Integral LP relaxation - one complete tour, candidate incumbent",
+  Infeasible:
+    "LP relaxation is proven to be infeasible - degree constraints unsatisfiable, or ≥2 subtours",
   Pruned:
-    "LP bound ≥ incumbent - LP solution worse than best tour found so far",
+    "LP bound ≥ incumbent - subtree cannot lead to a better tour; pruned either on its own bound or globally when the search ended.",
 }
 export const neutralDescription = "Never processed - still in the open queue"
 export const statusDescription = (s: NodeStatus | null) =>

@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge"
 import {
   Table,
   TableBody,
@@ -11,10 +10,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { incumbentAt, toNodeMap } from "@/lib/bnb"
 import { resolveImage } from "@/lib/images"
-import { statusBadgeClass } from "@/lib/status"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRunContext } from "@/context/run-context"
 import { useIterationContext } from "@/context/iteration-context"
+import NodeHeader from "./components/node-header"
+import BranchDecisions from "./components/branch-decisions"
+import LpEvidence from "./components/lp-evidence"
+import NodeOutcome from "./components/node-outcome"
+import ProducedSolutions from "./components/produced-solutions"
 
 const svg = (path: string | null | undefined, runId: string) => {
   if (!path) return null
@@ -24,6 +27,7 @@ const svg = (path: string | null | undefined, runId: string) => {
 export default function Inspector() {
   const { runData, runId } = useRunContext()
   const { iteration } = useIterationContext()
+
   const nodeMap = toNodeMap(runData)
   const currentNodeId = runData.processing_order[iteration - 1]
   const node = nodeMap.get(currentNodeId)
@@ -32,15 +36,14 @@ export default function Inspector() {
   if (!node) {
     return <div>No existing node data</div>
   }
+
+  const parent =
+    node.parent_id !== null ? nodeMap.get(node.parent_id) : undefined
+
   return (
     <ScrollArea>
       <div className="flex flex-col gap-4 p-4 text-sm">
-        <header className="flex items-center gap-3">
-          <Badge className={`${statusBadgeClass(node.status)}`}>
-            {node.status ?? "never processed"}
-          </Badge>
-          <span title={`depth = ${node.depth + 1}`}>↓ {node.depth + 1}</span>
-        </header>
+        <NodeHeader node={node} />
         {/* Act 1: decisions — fixedIn/fixedOut pair lists + own-branch diff
             (parent via nodeById/toNodeMap; thread map or parent prop in) */}
         {/* Act 2: LP — dl (objective), integral Badge, fractional-edge table, svg */}
@@ -83,6 +86,10 @@ export default function Inspector() {
             </TableRow>
           </TableBody>
         </Table>
+        <BranchDecisions node={node} parent={parent} />
+        <LpEvidence node={node} />
+        <NodeOutcome node={node} />
+        <ProducedSolutions node={node} />
       </div>
     </ScrollArea>
   )

@@ -25,7 +25,7 @@ function AppShell() {
       <title>{`TSP BnB (${runData.instance.name})`}</title>
       <div className="flex h-svh flex-col">
         <Header />
-        <main className="flex-1">
+        <main className="min-h-0 flex-1">
           <ResizablePanelGroup orientation="horizontal">
             <ResizablePanel minSize="192px" defaultSize="75">
               <BnBTree />

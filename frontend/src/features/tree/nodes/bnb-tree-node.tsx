@@ -1,4 +1,4 @@
-import type { BnBFlowNode } from "@/lib/bnb"
+import { decisionIteration, explainOutcome, type BnBFlowNode } from "@/lib/bnb"
 import { Handle, NodeToolbar, Position, type NodeProps } from "@xyflow/react"
 import type { CSSProperties } from "react"
 import { useEffect, useRef, useState } from "react"
@@ -8,6 +8,7 @@ import { ArrowDownCircle, ArrowUpCircle } from "lucide-react"
 import { useIterationContext } from "@/context/iteration-context"
 import { useDirectionContext } from "../context/direction-context"
 import type { Direction } from "@/lib/layout"
+import { useRunContext } from "@/context/run-context"
 
 const invisibleHandle = {
   opacity: 0, // Hide handles
@@ -34,6 +35,7 @@ export function BnBTreeNode({
   sourcePosition,
 }: NodeProps<BnBFlowNode>) {
   // 1. hooks
+  const { runData } = useRunContext()
   const { iteration, setIteration } = useIterationContext()
   const { direction } = useDirectionContext()
   const [hovered, setHovered] = useState(false)
@@ -52,9 +54,9 @@ export function BnBTreeNode({
   const objective = node.relaxed_solution?.objective
   const label = objective === undefined ? "-" : objective.toFixed(1)
 
-  const processed_at = data.node.processed_at
-  const isProcessed = processed_at !== null && processed_at <= iteration
-  const isCurrent = processed_at === iteration
+  const decision = decisionIteration(node)
+  const isDecided = decision !== null && decision <= iteration
+  const isCurrent = decision === iteration && node.processed_at === iteration
 
   // 3. handlers
   function handleMouseEnter() {
@@ -72,18 +74,21 @@ export function BnBTreeNode({
   }
 
   function handleNodeClick() {
-    if (node.processed_at !== null) {
-      setIteration(node.processed_at)
+    if (decision !== null) {
+      setIteration(decision)
     }
   }
 
   return (
     <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       <NodeToolbar isVisible={tooltipVisible} position={Position.Top}>
-        <div className="flex flex-col gap-1 rounded-md border bg-accent px-2 py-1 text-sm">
+        <div className="flex max-w-2xs flex-col gap-1 rounded-md border bg-accent px-2 py-1 text-sm select-text">
+          {explainOutcome(node, runData.instance.edges)}
           <span className="flex items-center">
-            <ArrowDownCircle size="16" className="mr-2" /> LB:{" "}
-            {node.relaxed_solution?.objective.toFixed(2)}
+            <dt className="flex items-center">
+              <ArrowDownCircle size="16" className="mr-2" /> LB:{" "}
+            </dt>
+            <dd>{node.relaxed_solution?.objective.toFixed(2)}</dd>
           </span>
           <span className="flex items-center">
             <ArrowUpCircle size="16" className="mr-2" /> UB: {node.ub}
@@ -96,14 +101,12 @@ export function BnBTreeNode({
         className={cn(
           "relative flex size-12 flex-col place-content-center items-center rounded-full text-foreground",
           statusNodeClass(node.status),
-          !isProcessed && "opacity-30",
+          !isDecided && "opacity-30",
           isCurrent && [
             "shadow-[0_0_--spacing(6)_(--tw-shadow-color)]",
             statusCurrentNodeClass(node.status),
           ]
         )}
-        // title={`#${node.node_id} · ${node.status}`}
-        // className="react-flow__node-default"
       >
         {/*<span className="font-bold">{node.processed_at ?? "-"}</span>*/}
         <span
