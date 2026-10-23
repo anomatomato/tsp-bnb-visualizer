@@ -45,6 +45,7 @@ export function Solutions({ node }: { node: FlatNode }) {
                 edges={instance.edges}
                 values={lp.edge_fractions}
                 mode="lp"
+                fixedEdges={node.fixed_edges}
               />
             </div>
           ) : (
@@ -71,6 +72,7 @@ export function Solutions({ node }: { node: FlatNode }) {
                 edges={instance.edges}
                 values={incumbent.edge_selection}
                 mode="tour"
+                fixedEdges={node.fixed_edges}
               />
             </div>
           ) : (

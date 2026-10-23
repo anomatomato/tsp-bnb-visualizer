@@ -51,6 +51,7 @@
   --color-bnb-status-infeasible: var(--bnb-status-infeasible);
   --color-bnb-status-branched: var(--bnb-status-branched);
   --color-bnb-status-pruned: var(--bnb-status-pruned);
+  --color-bnb-edge-included: var(--bnb-edge-included);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -123,6 +124,7 @@
   ); /* = red-600, matches --destructive */
   --bnb-status-branched: oklch(0.558 0.288 302.321); /* purple-600 */
   --bnb-status-pruned: var(--muted-foreground);
+  --bnb-edge-included: oklch(0.546 0.245 262.881); /* blue-600 */
 }
 
 /* Same roles, re-fitted for dark surfaces: text lightens, surfaces rise with
@@ -171,6 +173,7 @@
   ); /* = red-400, matches dark --destructive */
   --bnb-status-branched: oklch(71.4% 0.203 305.504); /* purple-400 */
   --bnb-status-pruned: var(--muted-foreground);
+  --bnb-edge-included: oklch(0.707 0.165 258); /* blue-400-ish */
 }
 
 @layer base {

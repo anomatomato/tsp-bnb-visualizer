@@ -129,7 +129,7 @@ export interface NodeVisData {
   /**
    * Per-edge branching state: None = free, 0 = fixed out, 1 = fixed in. Enables frontend tooltips showing why x_ij is 0/1 (LP choice vs branching fixation)
    */
-  fixed_edges: (number | null)[]
+  fixed_edges: (0 | 1 | null)[]
   /**
    * Children of the node.
    */
