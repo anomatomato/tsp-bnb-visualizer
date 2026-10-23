@@ -1,3 +1,41 @@
+import type { SolverConfigData } from "@/types/api-types"
+
+export type SolverConfigRow = {
+  label: string
+  description: string
+  id: string
+}
+
+export function solverConfigRows(c: SolverConfigData): SolverConfigRow[] {
+  return [
+    {
+      label: c.search_policy_label,
+      description: c.search_policy_description,
+      id: c.search_policy,
+    },
+    {
+      label: c.branching_strategy_label,
+      description: c.branching_strategy_description,
+      id: c.branching_strategy,
+    },
+    {
+      label: c.relaxation_label,
+      description: c.relaxation_description,
+      id: c.relaxation,
+    },
+    {
+      label: c.root_heuristics_label,
+      description: c.root_heuristics_description,
+      id: c.root_heuristics,
+    },
+  ]
+}
+
+export function solverConfigSummary(c: SolverConfigData): string {
+  return solverConfigRows(c)
+    .map((r) => r.label)
+    .join(" · ")
+}
 const thisYear = new Intl.DateTimeFormat(undefined, {
   month: "short",
   day: "numeric",

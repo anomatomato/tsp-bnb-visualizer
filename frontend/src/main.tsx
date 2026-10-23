@@ -19,7 +19,7 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <ThemeProvider>
-      <TooltipProvider>
+      <TooltipProvider delay={150}>
         <App />
       </TooltipProvider>
     </ThemeProvider>

@@ -82,7 +82,7 @@ export interface NodeVisData {
    */
   parent_id: number | null
   /**
-   * Queue-wide global lower bound (min LP bound over open nodes) at the iteration this node was processed. NOT this node's own bound — that is relaxed_solution.objective. None for nodes never processed.
+   * Queue-wide global lower bound (min LP bound over open nodes) when this node's fate was decided: at the iteration it was processed, or the queue-wide bound that closed the queue for globally pruned leftovers. NOT this node's own bound — that is relaxed_solution.objective. None for nodes never decided.
    */
   lb: number | null
   /**
@@ -163,7 +163,7 @@ export interface TourSnapshot {
  */
 export interface IterationEntry {
   /**
-   * Processed node this iteration
+   * The node processed this iteration
    */
   node_id: number
   /**
@@ -188,40 +188,104 @@ export interface IterationEntry {
  */
 export interface SolverConfigData {
   /**
-   * OpenNodeQueue policy, e.g. `best_bound_order`
+   * OpenNodeQueue policy identifier, e.g. `best_bound_order`
    */
   search_policy: string
   /**
-   * Used strategy for choosing the fractional edge to branch on, e.g. `MostFractional`
+   * Short human-readable policy name for header display
+   */
+  search_policy_label: string
+  /**
+   * One-sentence policy description for tooltips
+   */
+  search_policy_description: string
+  /**
+   * Branching strategy class name, e.g. `MostFractionalBranchingStrategy`
    */
   branching_strategy: string
   /**
-   * Used relaxation solver
+   * Short human-readable branching strategy name
+   */
+  branching_strategy_label: string
+  /**
+   * One-sentence branching strategy description
+   */
+  branching_strategy_description: string
+  /**
+   * Relaxation solver class name, e.g. `LPRelaxation`
    */
   relaxation: string
   /**
-   * Used heuristic used at BnB root, e.g. `TwoOptImproved`
+   * Short human-readable relaxation name
+   */
+  relaxation_label: string
+  /**
+   * One-sentence relaxation description
+   */
+  relaxation_description: string
+  /**
+   * Root heuristic class name, e.g. `TwoOptImproved`
    */
   root_heuristics: string
+  /**
+   * Short human-readable root heuristic name
+   */
+  root_heuristics_label: string
+  /**
+   * One-sentence root heuristic description
+   */
+  root_heuristics_description: string
 }
 /**
- * Which strategy components produced this run (names).
+ * Which strategy components produced this run (identifier + display tiers).
  */
 export interface SolverConfigData1 {
   /**
-   * OpenNodeQueue policy, e.g. `best_bound_order`
+   * OpenNodeQueue policy identifier, e.g. `best_bound_order`
    */
   search_policy: string
   /**
-   * Used strategy for choosing the fractional edge to branch on, e.g. `MostFractional`
+   * Short human-readable policy name for header display
+   */
+  search_policy_label: string
+  /**
+   * One-sentence policy description for tooltips
+   */
+  search_policy_description: string
+  /**
+   * Branching strategy class name, e.g. `MostFractionalBranchingStrategy`
    */
   branching_strategy: string
   /**
-   * Used relaxation solver
+   * Short human-readable branching strategy name
+   */
+  branching_strategy_label: string
+  /**
+   * One-sentence branching strategy description
+   */
+  branching_strategy_description: string
+  /**
+   * Relaxation solver class name, e.g. `LPRelaxation`
    */
   relaxation: string
   /**
-   * Used heuristic used at BnB root, e.g. `TwoOptImproved`
+   * Short human-readable relaxation name
+   */
+  relaxation_label: string
+  /**
+   * One-sentence relaxation description
+   */
+  relaxation_description: string
+  /**
+   * Root heuristic class name, e.g. `TwoOptImproved`
    */
   root_heuristics: string
+  /**
+   * Short human-readable root heuristic name
+   */
+  root_heuristics_label: string
+  /**
+   * One-sentence root heuristic description
+   */
+  root_heuristics_description: string
 }

@@ -80,7 +80,7 @@ class ProgressTracker:
             )
 
     def on_node_global_pruned(
-        self, node: BnBNode, best_solution: TSPSolution | None
+        self, node: BnBNode, best_solution: TSPSolution | None, global_lb: float
     ) -> None:
         """Called whenever a node is globally pruned."""
         if self._serializer is not None:
@@ -88,6 +88,7 @@ class ProgressTracker:
                 node,
                 iteration=self.num_iterations,
                 incumbent=best_solution.cost if best_solution else None,
+                lb=global_lb,
             )
 
     def start_search(self) -> None:

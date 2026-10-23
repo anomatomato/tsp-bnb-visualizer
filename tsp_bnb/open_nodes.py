@@ -31,6 +31,30 @@ def depth_first_order(node: BnBNode) -> PriorityKey:
     return (-node.depth,)
 
 
+@dataclass(frozen=True)
+class PolicyInfo:
+    """Human-readable tier for a queue priority function."""
+
+    label: str
+    description: str
+
+
+_POLICIES: dict[str, PolicyInfo] = {
+    best_bound_order.__name__: PolicyInfo(
+        label="Best-bound",
+        description="Always processes the open node with the lowest LP bound first.",
+    ),
+    breadth_first_order.__name__: PolicyInfo(
+        label="Breadth-first",
+        description="Processes nodes level by level, shallowest first.",
+    ),
+    depth_first_order.__name__: PolicyInfo(
+        label="Depth-first",
+        description="Always dives to the deepest open node first.",
+    ),
+}
+
+
 @dataclass(order=True, slots=True, frozen=True)
 class _QueueEntry:
     """Heap entry containing priority, insertion order, and node."""
@@ -57,6 +81,18 @@ class OpenNodeQueue:
     def policy_name(self) -> str:
         """Name of the priority function ('best_bound_order', 'depth_first_order', ...)"""
         return self._priority.__name__
+
+    @property
+    def policy_label(self) -> str:
+        """Short human-readable policy name; falls back to the identifier."""
+        info = _POLICIES.get(self.policy_name)
+        return info.label if info else self.policy_name
+
+    @property
+    def policy_description(self) -> str:
+        """One-sentence policy description; empty for unregistered policies."""
+        info = _POLICIES.get(self.policy_name)
+        return info.description if info else ""
 
     def enqueue(self, node: BnBNode) -> None:
         """Add `node`; equal priorities retain insertion order."""

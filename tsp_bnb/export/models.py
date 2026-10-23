@@ -58,9 +58,11 @@ class NodeVisData(BaseModel):
     lb: float | None = Field(
         ...,
         description=(
-            "Queue-wide global lower bound (min LP bound over open nodes) at the "
-            "iteration this node was processed. NOT this node's own bound — that "
-            "is relaxed_solution.objective. None for nodes never processed."
+            "Queue-wide global lower bound (min LP bound over open nodes) when "
+            "this node's fate was decided: at the iteration it was processed, "
+            "or the queue-wide bound that closed the queue for globally pruned "
+            "leftovers. NOT this node's own bound — that is "
+            "relaxed_solution.objective. None for nodes never decided."
         ),
     )
     ub: float | None = Field(
@@ -139,18 +141,44 @@ class IterationEntry(BaseModel):
 
 
 class SolverConfigData(BaseModel):
-    """Which strategy components produced this run (names)."""
+    """Which strategy components produced this run (identifier + display tiers)."""
 
     search_policy: str = Field(
-        ..., description="OpenNodeQueue policy, e.g. `best_bound_order`"
+        ..., description="OpenNodeQueue policy identifier, e.g. `best_bound_order`"
+    )
+    search_policy_label: str = Field(
+        ..., description="Short human-readable policy name for header display"
+    )
+    search_policy_description: str = Field(
+        ..., description="One-sentence policy description for tooltips"
     )
     branching_strategy: str = Field(
         ...,
-        description="Used strategy for choosing the fractional edge to branch on, e.g. `MostFractional`",
+        description="Branching strategy class name, e.g. `MostFractionalBranchingStrategy`",
     )
-    relaxation: str = Field(..., description="Used relaxation solver")
+    branching_strategy_label: str = Field(
+        ..., description="Short human-readable branching strategy name"
+    )
+    branching_strategy_description: str = Field(
+        ..., description="One-sentence branching strategy description"
+    )
+    relaxation: str = Field(
+        ..., description="Relaxation solver class name, e.g. `LPRelaxation`"
+    )
+    relaxation_label: str = Field(
+        ..., description="Short human-readable relaxation name"
+    )
+    relaxation_description: str = Field(
+        ..., description="One-sentence relaxation description"
+    )
     root_heuristics: str = Field(
-        ..., description="Used heuristic used at BnB root, e.g. `TwoOptImproved`"
+        ..., description="Root heuristic class name, e.g. `TwoOptImproved`"
+    )
+    root_heuristics_label: str = Field(
+        ..., description="Short human-readable root heuristic name"
+    )
+    root_heuristics_description: str = Field(
+        ..., description="One-sentence root heuristic description"
     )
 
 

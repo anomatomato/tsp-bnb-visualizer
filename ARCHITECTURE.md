@@ -150,7 +150,10 @@ BnBRunData
 ├── instance: InstanceData          # name, nodes[{id,x,y}], edges[{u,v,weight}]
 ├── tree: NodeVisData (recursive)
 │   ├── node_id, parent_id, depth
-│   ├── lb                           # queue-wide global LB at processing time
+│   ├── lb                           # queue-wide global LB when the node's
+│   │                               # fate was decided: at processing, or
+│   │                               # the queue-wide bound that closed the
+│   │                               # queue for globally pruned leftovers
 │   │                               # (NOT the node's own bound — that is
 │   │                               # relaxed_solution.objective)
 │   ├── ub                           # incumbent when the node's fate was
@@ -171,7 +174,8 @@ BnBRunData
 ├── best_solutions: [{iteration, cost, edge_selection, image_path}]
 ├── processing_order: [node_id, ...]          # slider position → processed node
 ├── started_at?                     # tz-aware ISO-8601 run start (None for pre-field runs)
-└── solver_config                   # search_policy, branching_strategy, relaxation, root_heuristics
+└── solver_config                   # per component: identifier, short *_label, long *_description
+                                    # (search_policy, branching_strategy, relaxation, root_heuristics)
 ```
 
 Node-outcome semantics: `prune_reason` distinguishes per-node bound prunes

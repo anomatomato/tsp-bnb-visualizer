@@ -144,11 +144,20 @@ class TSPBnb:
         return NodeStatus.BRANCHED
 
     def _solver_config(self) -> SolverConfigData:
+        # `relaxation` is stored as the class; the other two as instances.
         return SolverConfigData(
             search_policy=self.node_queue.policy_name,
+            search_policy_label=self.node_queue.policy_label,
+            search_policy_description=self.node_queue.policy_description,
             branching_strategy=type(self.branching_strategy).__name__,
+            branching_strategy_label=self.branching_strategy.display_name,
+            branching_strategy_description=self.branching_strategy.display_description,
             relaxation=self.relaxation.__name__,
+            relaxation_label=self.relaxation.display_name,
+            relaxation_description=self.relaxation.display_description,
             root_heuristics=type(self.root_heuristics).__name__,
+            root_heuristics_label=self.root_heuristics.display_name,
+            root_heuristics_description=self.root_heuristics.display_description,
         )
 
     def search(self, iteration_limit: int = 10_000) -> TSPSolution | None:
@@ -186,12 +195,13 @@ class TSPBnb:
             self.progress_tracker.end_iteration(status)
 
             # Global prune: no better solution exists
-            if self.node_queue.lower_bound() >= self.solutions.best_solution_value():
+            global_lb = self.node_queue.lower_bound()
+            if global_lb >= self.solutions.best_solution_value():
                 logger.info("Global prune at iteration %d", iteration)
                 for pruned_node in self.node_queue.nodes_in_queue():
                     pruned_node.status = NodeStatus.PRUNED
                     self.progress_tracker.on_node_global_pruned(
-                        pruned_node, self.solutions.best_solution()
+                        pruned_node, self.solutions.best_solution(), global_lb
                     )
                 break
 

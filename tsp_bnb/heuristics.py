@@ -12,7 +12,7 @@ feasible `TSPSolution` (or None if no tour could be constructed).
 """
 
 from abc import ABC, abstractmethod
-from typing import cast
+from typing import ClassVar, cast, override
 
 import networkx as nx
 from networkx.algorithms import approximation as approx
@@ -35,6 +35,9 @@ class Heuristics(ABC):
     from the fractional LP solution. `TwoOptImproved` wraps any heuristic
     with a 2-opt local-search improvement pass.
     """
+
+    display_name: ClassVar[str] = "Heuristic"
+    display_description: ClassVar[str] = ""
 
     @abstractmethod
     def search(
@@ -64,6 +67,13 @@ class NearestNeighborHeuristic(Heuristics):
     NN builds from the instance alone.
     """
 
+    display_name = "Nearest-neighbor"
+    display_description = (
+        "Starting from an arbitrary city, repeatedly extends the tour "
+        "to the nearest unvisited city."
+    )
+
+    @override
     def search(
         self, instance: TSPInstance, relaxed: RelaxedSolution | None = None
     ) -> TSPSolution:
@@ -86,9 +96,16 @@ class TwoOptImproved(Heuristics):
         heuristic = TwoOptImproved(ChristofidesHeuristic())
     """
 
+    display_name = "Nearest-neighbor + 2-opt"
+    display_description = (
+        "Runs the inner heuristic for an initial tour, then refines it "
+        "with a 2-opt local-search pass."
+    )
+
     def __init__(self, inner: Heuristics):
         self.inner = inner
 
+    @override
     def search(
         self, instance: TSPInstance, relaxed: RelaxedSolution | None = None
     ) -> TSPSolution:

@@ -16,7 +16,7 @@ export default function Legend() {
           <Tooltip key={status}>
             <TooltipTrigger
               render={
-                <li className="flex items-center gap-2">
+                <li className="flex cursor-help items-center gap-2">
                   <span
                     className={`size-3 rounded-full ${statusNodeClasses[status]}`}
                   ></span>

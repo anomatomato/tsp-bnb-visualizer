@@ -228,8 +228,20 @@ def test_global_pruned_leftover_exports_incumbent_and_iteration(
     fractions = [1.0, 0.0, 1.0, 0.5, 0.5, 0.0]
     node = _make_node(square_instance, fractions, status=NodeStatus.PRUNED)
 
+    # A leftover shares the last processed iteration's entry, so the search
+    # loop always processes at least one node before a global prune.
+    processed = _make_node(
+        square_instance, fractions, status=NodeStatus.BRANCHED, node_id=7
+    )
+    serializer.on_new_node_in_tree(processed, iteration=1)
+    serializer.on_node_processed(processed, lb=4.0, ub=426.0, iteration=38)
+
     serializer.on_new_node_in_tree(node, iteration=1)
-    serializer.on_node_global_pruned(node, iteration=39, incumbent=426.0)
+    serializer.on_node_global_pruned(node, iteration=39, incumbent=426.0, lb=428.0)
+
+    assert serializer._iteration_entries[-1].global_pruned_node_ids == [node.node_id], (
+        "the leftover is appended to the shared final iteration entry"
+    )
 
     data = serializer._node_data[node.node_id]
     assert data.status is NodeStatus.PRUNED, "leftover is marked pruned"
@@ -238,6 +250,7 @@ def test_global_pruned_leftover_exports_incumbent_and_iteration(
     )
     assert data.pruned_at == 39, "leftover records the global-prune iteration"
     assert data.ub == 426.0, "leftover ub is the incumbent that closed the queue"
+    assert data.lb == 428.0, "leftover lb is the queue-wide bound that closed the queue"
     assert data.processed_at is None, "leftovers are never processed"
     assert node.node_id not in serializer._processing_order, (
         "leftovers never enter the processing order"
@@ -253,11 +266,18 @@ def test_global_pruned_leftover_without_incumbent_keeps_ub_none(
     fractions = [1.0, 0.0, 1.0, 0.5, 0.5, 0.0]
     node = _make_node(square_instance, fractions, status=NodeStatus.PRUNED)
 
+    processed = _make_node(
+        square_instance, fractions, status=NodeStatus.BRANCHED, node_id=7
+    )
+    serializer.on_new_node_in_tree(processed, iteration=1)
+    serializer.on_node_processed(processed, lb=4.0, ub=426.0, iteration=4)
+
     serializer.on_new_node_in_tree(node, iteration=1)
-    serializer.on_node_global_pruned(node, iteration=5)  # incumbent omitted
+    serializer.on_node_global_pruned(node, iteration=5, lb=7.5)  # incumbent omitted
 
     data = serializer._node_data[node.node_id]
     assert data.ub is None, "no incumbent at prune time means ub stays None"
+    assert data.lb == 7.5, "the queue-wide bound is still recorded"
     assert data.pruned_at == 5, "iteration is still recorded"
 
 
@@ -322,8 +342,20 @@ def test_square_best_bound_run_exports_root_outcome(
     assert data.solver_config.search_policy == "best_bound_order", (
         "solver_config must record the queue policy"
     )
+    assert data.solver_config.search_policy_label == "Best-bound", (
+        "solver_config must record the policy label"
+    )
+    assert data.solver_config.search_policy_description, (
+        "policy description must be non-empty"
+    )
     assert data.solver_config.branching_strategy == "MostFractionalBranchingStrategy", (
         "solver_config must record the branching strategy class"
+    )
+    assert data.solver_config.branching_strategy_label == "Most-fractional branching", (
+        "solver_config must record the branching strategy label"
+    )
+    assert data.solver_config.root_heuristics_description, (
+        "root heuristic description must be non-empty"
     )
 
 
@@ -344,6 +376,9 @@ def test_dfs_run_exports_prune_reasons(
     assert data.solver_config.search_policy == "depth_first_order", (
         "solver_config must record the DFS policy"
     )
+    assert data.solver_config.search_policy_label == "Depth-first", (
+        "solver_config must record the DFS policy label"
+    )
     for node in nodes:
         if node.status is NodeStatus.PRUNED:
             assert node.prune_reason in (
@@ -356,6 +391,11 @@ def test_dfs_run_exports_prune_reasons(
             if node.prune_reason is PruneReason.NODE_BOUND:
                 assert node.pruned_at == node.processed_at, (
                     f"node-bound prune {node.node_id} happens at processing"
+                )
+            if node.prune_reason is PruneReason.GLOBAL_BOUND:
+                assert node.lb == pytest.approx(data.iterations[-1].global_lb), (
+                    f"leftover {node.node_id} dies against the queue-wide bound "
+                    "that closed the queue — the final entry's global_lb"
                 )
         if node.status is NodeStatus.INFEASIBLE:
             assert node.infeasible_reason in (

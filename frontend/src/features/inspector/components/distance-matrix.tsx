@@ -26,7 +26,7 @@ const cellText = (
   weight: (u: number, v: number) => number | undefined
 ) => (u === v ? "" : (weight(u, v)?.toFixed(1) ?? ""))
 
-export default function DistanceMatrix() {
+export function DistanceMatrix() {
   const { runData } = useRunContext()
   const nodes = runData.instance.nodes
   const [copied, setCopied] = useState(false)
@@ -116,7 +116,12 @@ export default function DistanceMatrix() {
                     {row.id}
                   </TableCell>
                   {nodes.map((col) => {
-                    const w = row.id === col.id ? null : weight(row.id, col.id)
+                    // ?? null: a missing edge renders like the diagonal
+                    // instead of crashing toFixed
+                    const w =
+                      row.id === col.id
+                        ? null
+                        : (weight(row.id, col.id) ?? null)
                     return (
                       <TableCell
                         key={col.id}

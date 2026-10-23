@@ -12,6 +12,7 @@ cost, the BnB node can be pruned.
 
 import abc
 import logging
+from typing import ClassVar
 
 import highspy
 import networkx as nx
@@ -31,6 +32,9 @@ class Relaxation(abc.ABC):
     consistent with the given fixations. The bound can be used by the BnB
     search to prune nodes whose bound exceeds the best-known tour cost.
     """
+
+    display_name: ClassVar[str] = "Relaxation"
+    display_description: ClassVar[str] = ""
 
     def __init__(
         self,
@@ -113,6 +117,12 @@ class LPRelaxation(Relaxation):
     Returns a `RelaxedSolution` with the edge fractions and the LP objective,
     which serves as a lower bound on the best integer tour under these fixations.
     """
+
+    display_name = "LP relaxation (HiGHS)"
+    display_description = (
+        "Solves the degree-constrained LP relaxation with HiGHS and lazily "
+        "adds shared subtour-elimination cuts."
+    )
 
     def __init__(
         self,

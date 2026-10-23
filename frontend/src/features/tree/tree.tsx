@@ -13,7 +13,7 @@ import {
   useReactFlow,
   type MiniMapNodeProps,
 } from "@xyflow/react"
-import { ArrowDownUp, ArrowLeftRight } from "lucide-react"
+import { ArrowDownUp, ArrowLeftRight, Maximize } from "lucide-react"
 import { useCallback, useMemo } from "react"
 import { nodeTypes } from "./nodes"
 import { TimeLine } from "./components/timeline"
@@ -90,7 +90,7 @@ function BnBTreeCanvas() {
       <Panel position="top-left">
         <Legend />
       </Panel>
-      <Panel position="top-right">
+      <Panel position="top-right" className="flex gap-1">
         {/* label/icon shows the direction you will switch TO */}
         <Button
           variant="outline"
@@ -99,7 +99,15 @@ function BnBTreeCanvas() {
           className="shadow-sm active:not-aria-[haspopup]:shadow-none"
         >
           {direction === "TB" ? <ArrowLeftRight /> : <ArrowDownUp />}
-          {direction === "TB" ? "horizontal" : "vertical"}
+          Change layout
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => fitView()}
+          title="Fit View"
+          className="shadow-sm active:not-aria-[haspopup]:shadow-none"
+        >
+          <Maximize /> Fit view
         </Button>
       </Panel>
       <Panel position="bottom-center">

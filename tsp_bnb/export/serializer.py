@@ -158,14 +158,18 @@ class BnBSerializer:
         *,
         iteration: int,
         incumbent: float | None = None,
+        lb: float,
     ) -> None:
         """Called when a queue-leftover node is pruned (global prune at end).
 
         These nodes were never processed: no processing_order entry and no
         processed_at. The incumbent at the global-prune decision is exported
-        as `ub`, and `pruned_at` records the prune iteration. Their
-        creation-time LP is still real data — record fixed edges and the
-        relaxed snapshot so the inspector can show what the search skipped.
+        as `ub`, and the queue-wide lower bound that closed the queue as
+        `lb` — the same value every leftover dies against, and the same
+        `global_lb` the final iteration entry carries. `pruned_at` records
+        the prune iteration. Their creation-time LP is still real data —
+        record fixed edges and the relaxed snapshot so the inspector can
+        show what the search skipped.
         """
         self._iteration_entries[-1].global_pruned_node_ids.append(node.node_id)
 
@@ -173,6 +177,7 @@ class BnBSerializer:
         data.status = node.status  # NodeStatus.PRUNED
         data.fixed_edges = list(node.branching_decisions)
         data.ub = incumbent
+        data.lb = lb
         data.pruned_at = iteration
         data.prune_reason = PruneReason.GLOBAL_BOUND
         self._record_relaxed_snapshot(data, node)

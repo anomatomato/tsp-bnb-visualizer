@@ -12,7 +12,7 @@ You should implement your own strategies by subclassing `BranchingStrategy`.
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import override
+from typing import ClassVar, override
 
 from .bnb_nodes import BnBNode
 from .branching_decisions import BranchingDecisions
@@ -25,6 +25,9 @@ class BranchingStrategy(ABC):
     Subclasses must implement `make_branching_decisions` to return zero,
     two, or more `BranchingDecisions` objects describing child nodes.
     """
+
+    display_name: ClassVar[str] = "Branching strategy"
+    display_description: ClassVar[str] = ""
 
     @abstractmethod
     def make_branching_decisions(self, node: BnBNode) -> Sequence[BranchingDecisions]:
@@ -39,6 +42,9 @@ class FirstUndecidedBranchingStrategy(BranchingStrategy):
     """
     Branch on the first variable that has not yet been fixed.
     """
+
+    display_name = "First-undecided branching"
+    display_description = "Branches on the first edge that has not yet been fixed."
 
     @override
     def make_branching_decisions(self, node: BnBNode) -> tuple[BranchingDecisions, ...]:
@@ -59,6 +65,11 @@ class FirstFractionalBranchingStrategy(BranchingStrategy):
     """
 
     _FRACTIONAL_TOL = 1e-8
+    display_name = "First-fractional branching"
+    display_description = (
+        "Branches on the first edge whose LP value is fractional, "
+        "falling back to the first unfixed edge."
+    )
 
     @override
     def make_branching_decisions(self, node: BnBNode) -> tuple[BranchingDecisions, ...]:
@@ -95,6 +106,11 @@ class MostFractionalBranchingStrategy(BranchingStrategy):
     """
 
     _FRACTIONAL_TOL = 1e-8
+    display_name = "Most-fractional branching"
+    display_description = (
+        "Branches on the unfixed edge whose LP value is closest to 0.5; "
+        "ties are broken by the greatest edge weight."
+    )
 
     def _sort_key(self, candidate: tuple[int, float, float]):
         return (

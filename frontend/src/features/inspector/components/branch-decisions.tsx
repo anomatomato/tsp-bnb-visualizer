@@ -2,7 +2,7 @@ import { useRunContext } from "@/context/run-context"
 import { edgeLabel, fixedEdgesOf, ownBranch, type FlatNode } from "@/lib/bnb"
 import { Section } from "./section"
 
-export default function BranchDecisions({
+export function BranchDecisions({
   node,
   parent,
 }: {

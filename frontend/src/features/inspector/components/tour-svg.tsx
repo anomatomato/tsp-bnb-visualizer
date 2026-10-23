@@ -60,8 +60,8 @@ export function TourSvg({ positions, edges, values, mode }: TourSvgProps) {
         // Edge tooltip: endpoints + weight, plus the LP fraction in lp mode.
         const tip =
           mode === "tour"
-            ? `${e.u}–${e.v} · weight ${e.weight.toFixed(1)}`
-            : `${e.u}–${e.v}: ${value.toFixed(2)} · weight ${e.weight.toFixed(1)}`
+            ? `(${e.u}–${e.v}) · weight ${e.weight.toFixed(1)}`
+            : `(${e.u}–${e.v}): ${value.toFixed(2)} · weight ${e.weight.toFixed(1)}`
         if (mode === "tour") {
           if (value <= 0.5) return null
           return (
@@ -71,7 +71,7 @@ export function TourSvg({ positions, edges, values, mode }: TourSvgProps) {
               y1={a.y}
               x2={b.x}
               y2={b.y}
-              className="stroke-primary"
+              className="stroke-sky-700 dark:stroke-sky-500"
               strokeLinecap="round"
               strokeWidth={STROKE_TOUR}
             >
@@ -106,7 +106,7 @@ export function TourSvg({ positions, edges, values, mode }: TourSvgProps) {
             y1={a.y}
             x2={b.x}
             y2={b.y}
-            className="stroke-warning"
+            className="stroke-destructive"
             strokeLinecap="round"
             strokeWidth={STROKE_LP_BASE + STROKE_LP_RANGE * value}
           >

@@ -78,8 +78,12 @@ export function fixedEdgesOf(node: FlatNode): {
   fixedIn: number[]
   fixedOut: number[]
 } {
-  const fixedIn = node.fixed_edges.filter((e) => e === 1)
-  const fixedOut = node.fixed_edges.filter((e) => e === 0)
+  const fixedIn: number[] = []
+  const fixedOut: number[] = []
+  node.fixed_edges.forEach((value, index) => {
+    if (value === 1) fixedIn.push(index)
+    else if (value === 0) fixedOut.push(index)
+  })
 
   return {
     fixedIn,
@@ -131,10 +135,10 @@ export function explainOutcome(node: FlatNode, edges: EdgeData[]): string {
       const label = i === null ? "-" : edgeLabel(edges, i)
       const fraction =
         i === null ? undefined : node.relaxed_solution?.edge_fractions[i]
-      return `Branched on edge ${label}: the LP left it at ${fmtFraction(fraction)}`
+      return `Branches on edge ${label} with value ${fmtFraction(fraction)}`
     }
     case "Integer": {
-      return `Integral LP relaxation - one complete tour. It becomes the new incumbent (best tour so far).`
+      return `Integral LP relaxation. Becomes the new incumbent (best tour so far).`
     }
     case "Pruned": {
       switch (node.prune_reason) {
@@ -158,12 +162,54 @@ export function explainOutcome(node: FlatNode, edges: EdgeData[]): string {
           return `Infeasible: no LP solution exists.`
         }
         default: {
-          return `Pruned at iteration ${node.pruned_at ?? "-"}`
+          return `Infeasible — reason unrecorded.`
         }
       }
     }
     default:
       return `Unknown node status: ${node.status}`
+  }
+}
+
+/**
+ * Short headline for the tree-node tooltip card: the one-line "why does
+ * this node look like this" without the full `explainOutcome` prose.
+ */
+export function outcomeHeadline(node: FlatNode, edges: EdgeData[]): string {
+  if (node.status === null) {
+    const decision = decisionIteration(node)
+    return decision === null
+      ? "Still in the open queue"
+      : `Still open — decision lands at iteration ${decision}`
+  }
+  switch (node.status) {
+    case "Branched": {
+      const i = node.branched_edge
+      const label = i === null ? "-" : edgeLabel(edges, i)
+      const fraction =
+        i === null ? undefined : node.relaxed_solution?.edge_fractions[i]
+      return `Branches on ${label} at ${fmtFraction(fraction)}`
+    }
+    case "Integer":
+      return "Integral LP — became the incumbent"
+    case "Pruned":
+      switch (node.prune_reason) {
+        case "global_bound":
+          return "Global LB ≥ incumbent — leftover globally pruned"
+        case "node_bound":
+          return "Own bound ≥ incumbent"
+        default:
+          return "Pruned — reason unrecorded"
+      }
+    case "Infeasible":
+      switch (node.infeasible_reason) {
+        case "subtours":
+          return "Integral but disconnected (subtours)"
+        case "lp_infeasible":
+          return "No LP solution exists"
+        default:
+          return "Infeasible — reason unrecorded"
+      }
   }
 }
 
