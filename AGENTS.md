@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Repository: TSP Branch-and-Bound visualizer (Python + HiGHS backend, React + React Flow frontend).
-Read `ARCHITECTURE.md` and `PLAN.md` for the high-level design before starting.
+Read `ARCHITECTURE.md` for the high-level design before starting (`PLAN.md`, if present, is a local untracked roadmap). `README.md` has the user-facing commands. `CLAUDE.md` only imports this file, so edit instructions here.
 
 ## Setup
 
@@ -25,8 +25,17 @@ pnpm -C frontend install       # deps (node_modules)
 pnpm -C frontend dev           # Vite dev server
 pnpm -C frontend build         # tsc -b + vite build
 pnpm -C frontend lint          # ESLint
-pnpm -C frontend typecheck     # tsc --noEmit
+pnpm -C frontend typecheck     # tsc -b  (NOT tsc --noEmit: root tsconfig is solution-style → checks nothing)
 ```
+
+`just` recipes (see README for the full table): `just setup`, `just example [ARGS]` (= `uv run main.py`), `just publish`, `just serve` / `just serve-stop`, `just types`, `just test`, `just clean`.
+
+## Workflow rules
+
+- **Frontend change → `just publish`.** The viewer server serves the built copy in `output/` (`index.html` + `assets/`, tracked in git), not `frontend/src`. Unpublished changes are invisible at `localhost:8123`. Commit the republished `output/` with the frontend change.
+- **Export model change → `just types`** to regenerate `frontend/src/types/api-types.ts` (generated, never hand-edit; needs `json2ts` on `PATH`). Then fix frontend type errors and regenerate runs.
+- No legacy-run compatibility: schema changes need no fallbacks for old runs in `output/runs/`; wipe with `just clean` and rerun.
+- Backend SVG rendering is off by default (`BnBSerializer(instance, render_svgs=False)`); `image_path` fields are `null`. Don't "fix" that — the frontend draws tours with `TourSvg`.
 
 `pyproject.toml` configures `pythonpath = ["tsp_bnb"]` and `search-path = ["tsp_bnb"]` for pytest / pyrefly / pyright — so tests and source files can `from tsp_bnb import ...` directly without an editable install.
 
@@ -64,14 +73,16 @@ decisions.fix(edge_index_of(graph.edges, 0, 1), 1)  # NOT decisions.fix((0, 1), 
 - React Flow: `nodeTypes`/`edgeTypes` maps at **module scope**, never inline in a component.
 - Theming: shadcn CSS-variable tokens in `index.css` (`:root`/`.dark`), toggled by `components/theme-provider.tsx`; React Flow gets `colorMode={resolvedTheme}`.
 - Colors: UI chrome uses the existing shadcn tokens only; raw Tailwind ramps (`bg-emerald-600` …) for one-off decoration. Colors that carry meaning become tokens (`--bnb-status-*`, `--warning`) with a `.dark` twin (same H, +L, ×~0.6 C). Tokens are defined at anchor strength; all softer variants are opacity modifiers from the fixed set `10 20 30 50 80` (`/10`–`/20` tinted surface, `/50` ring, `/80` hover, `/30`–`/70` de-emphasis). Full rules in ARCHITECTURE.md "Color & opacity conventions".
-- pre-commit: the root `prettier` hook excludes `frontend/`; the `prettier-frontend` hook runs frontend's own prettier via `scripts/prettier-frontend.sh` (requires `pnpm -C frontend install`).
+- Formatting: the root pre-commit `prettier` hook excludes `frontend/`; Lefthook runs the frontend's own prettier (with the tailwind plugin) and `eslint --fix` on staged frontend files (requires `pnpm -C frontend install`).
 - Never track Vite's `.vite/` dependency cache.
+- New modules use named exports.
+- Frontend tests (when added) target pure functions in `src/lib/`.
 
 ## Test conventions
 
 - All test files must be `test_*.py` (enforced by pre-commit `name-tests-test --pytest-test-first`).
 - Mark HiGHS-dependent or expensive tests with `@pytest.mark.slow` (marker defined in `pyproject.toml`).
-- Shared fixtures in `tests/conftest.py`: `square_instance` (4-city, optimal=4.0), `triangle_instance` (3-city, LP is integral), `fresh_pool`, `empty_decisions`.
+- Shared fixtures in `tests/conftest.py`: `square_instance` (4-city, optimal=4.0, root LP already integral — cannot exercise branching), `triangle_instance` (3-city, LP is integral), `two_triangles_instance`, `fresh_pool`, `empty_decisions`.
 - Include a custom message in every `assert` — pre-commit / pytest output is much more useful.
 
 ## Project structure
@@ -81,15 +92,18 @@ decisions.fix(edge_index_of(graph.edges, 0, 1), 1)  # NOT decisions.fix((0, 1), 
 - `examples/` — TSPLIB loader (`tsplib.py`, rejects non-`EUC_2D` instances) and `data/` with the TSPLIB archive.
 - `frontend/` — React + Vite + pnpm visualizer (React Flow, shadcn/ui, Tailwind v4). See ARCHITECTURE.md for the `src/` layout.
 - `tests/` — pytest tests + `conftest.py`.
-- `main.py` — TSPLIB BnB runner: instance registry (`RUNS`, typed `Tier`) + CLI (`uv run main.py [instances] [--list|--limit N|--no-browser|--no-export]`; bare run = eil51 + st70).
-- `ARCHITECTURE.md` / `PLAN.md` — system design and roadmap.
+- `main.py` — TSPLIB BnB runner: instance registry (`RUNS`, typed `Tier`) + CLI (`uv run main.py [instances] [--list|--limit N|--no-browser|--no-export]`; bare run = `DEFAULT_RUNS` = eil51, st70, rat99).
+- `scripts/generate_types.py` — Pydantic → TypeScript codegen behind `just types`.
+- `output/` — published viewer (tracked) + `runs/` artifacts and `.server.{pid,log}` (ignored).
+- `ARCHITECTURE.md` — system design, data format, frontend conventions.
 
 ## Tooling
 
 - Type check: **pyrefly** (not mypy). Config in `[tool.pyrefly]` of `pyproject.toml`.
 - Lint + format: **ruff** (via pre-commit).
 - Property tests: **hypothesis** + **pytest**.
-- pre-commit hooks: pyrefly, ruff, prettier (+ `prettier-frontend`), blacken-docs, shellcheck, uv-lock, uv-export, name-tests-test, disallow-caps.
+- pre-commit hooks: pyrefly, ruff, prettier (non-frontend), blacken-docs, shellcheck, uv-lock, uv-export, name-tests-test, disallow-caps.
+- Git hooks are managed by **Lefthook** (`lefthook.yml`, installed by `just setup`): it runs `uv run pre-commit run --files {staged_files}` plus frontend `eslint --fix` / `prettier --write` with `stage_fixed`. Don't add `stage_fixed` or `|| true` to the pre-commit job — it exits 1 when it modifies files.
 
 ## Reference
 

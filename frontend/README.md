@@ -1,98 +1,58 @@
-# React + TypeScript + Vite + shadcn/ui
+# Frontend: BnB viewer
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+This is the React 19 + TypeScript + Vite app that replays a run exported by the Python solver. It uses React Flow (`@xyflow/react`) for the tree and dagre for the layout. The UI is built with shadcn/ui on Base UI and Tailwind v4, and the React Compiler is enabled.
 
-## Adding components
+The app does not bundle any run data. At runtime it fetches `/runs/index.json` (the catalog) and `/runs/<run-id>/bnb_state.json`, and the active run is selected with `?run=<run-id>`.
 
-To add components to your app, run the following command:
+## Commands
+
+Requires Node 22 and pnpm (see the root `mise.toml`). Run these from the repo root with `-C frontend`, or from inside `frontend/`:
 
 ```bash
-npx shadcn@latest add button
+pnpm -C frontend install
+pnpm -C frontend dev         # dev server; serves ../output/runs at /runs
+pnpm -C frontend build       # tsc -b + vite build → frontend/dist
+pnpm -C frontend typecheck   # tsc -b
+pnpm -C frontend lint        # ESLint (jsx-a11y, tailwindcss, react-hooks)
+pnpm -C frontend format      # Prettier (+ tailwind class sorting)
 ```
 
-This will place the ui components in the `src/components` directory.
+**After a change, publish the build:** `just publish` from the repo root. It builds the app and copies `dist/` into `output/`, where the detached viewer server (`localhost:8123`) serves it. Commit the updated `output/index.html` and `output/assets/`; that tracked build is what users get without Node.
 
-## Using components
+The `typecheck` script must stay `tsc -b`. The root `tsconfig.json` is solution-style (`files: []` plus references), so a bare `tsc --noEmit` checks nothing and always passes.
 
-To use the components in your app, import them as follows:
+## Data and types
 
-```tsx
-import { Button } from "@/components/ui/button"
+- `src/types/api-types.ts` is **generated** from `tsp_bnb/export/models.py`. Do not edit it by hand; run `just types` (needs `json2ts` on `PATH`).
+- In dev mode, the custom `serve-output-runs` middleware in `vite.config.ts` serves `../output/runs`. Generate runs with `uv run main.py` before you start the dev server.
+
+## Layout (`src/`)
+
+```
+main.tsx                     # root: ThemeProvider + App
+app/
+  index.tsx                  # AppShell: header + resizable tree | inspector
+  provider.tsx               # RunProvider, Suspense/ErrorBoundary, IterationProvider
+context/
+  run-context.tsx            # run catalog + selected run (state ↔ ?run= URL)
+  iteration-context.tsx      # current replay iteration; the inspected node is derived from it
+features/
+  header/                    # run picker, solver-config summary + tooltip, theme toggle
+  tree/                      # React Flow canvas, custom node/edge, legend, timeline, playback
+  inspector/                 # node header, branch decisions, outcome, fractional edges,
+                             # solutions (TourSvg: relaxed / incumbent / heuristic), distance matrix
+lib/                         # pure helpers: bnb.ts (tree mapping, outcomes, incumbentAt), layout.ts
+                             # (dagre), run.ts (fetching), format.ts, status.ts (status classes)
+components/                  # shared: theme provider, loading/error screens, ui/ (shadcn)
+hooks/                       # small generic hooks
 ```
 
-# React + TypeScript + Vite
+Dependencies only point downwards: `features/*` may import from `lib/`, `components/` and `context/`, but never from another feature. State that several areas need lives in `context/`.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Conventions
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x"
-import reactDom from "eslint-plugin-react-dom"
-
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- Path alias `@/` → `src/`. It is configured in **both** `tsconfig.app.json` and `vite.config.ts`.
+- React Flow `nodeTypes`/`edgeTypes` are defined at module scope, never inline.
+- In code we write ourselves, use only these spacing/sizing steps: `1 2 3 4 6 8 12 16 24 32 48 64 96 128 160 192`. Opacity modifiers come only from `10 20 30 50 80`. Meaningful colors are tokens (`--bnb-status-*`, `--warning`) with a `.dark` twin. The full rules are in the root `ARCHITECTURE.md`.
+- Use named exports for new modules.
+- Adding a shadcn component: `pnpm -C frontend dlx shadcn@latest add <name>`. The source lands in `src/components/ui/`.

@@ -1,7 +1,7 @@
 """TSPLIB BnB runner: solve instances, export runs, open the viewer.
 
 Usage:
-    uv run main.py                       # default: eil51, then st70
+    uv run main.py                       # default: DEFAULT_RUNS (eil51, st70, rat99)
     uv run main.py berlin52 kroA100      # explicit instances
     uv run main.py pcb442 --limit 300    # stress probe -> partial run exported
     uv run main.py kroA200 --no-export   # serializer-less timing, no artifacts
