@@ -234,3 +234,4 @@ plans/
 output/*
 !output/index.html
 !output/assets
+!output/*.svg

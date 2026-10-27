@@ -18,9 +18,11 @@ class TspLibGraphInstanceDb:
     def __init__(self, archive_path: Path = _DATA_DIR / "ALL_tsp.tar.gz"):
         self.archive_path = archive_path
         self.instance_names = [
-            # Integer coordinate based instances <= 1_000 nodes
-            "att48",
-            "att532",
+            # EUC_2D instances (metric enforced in __getitem__)
+            "a280",
+            "berlin52",
+            "bier127",
+            "ch150",
             "eil101",
             "eil51",
             "eil76",
@@ -37,6 +39,7 @@ class TspLibGraphInstanceDb:
             "lin105",
             "lin318",
             "linhp318",
+            "pcb442",
             "pr107",
             "pr124",
             "pr136",
@@ -47,7 +50,10 @@ class TspLibGraphInstanceDb:
             "pr299",
             "pr439",
             "pr76",
+            "rat99",
+            "rat575",
             "st70",
+            "ts225",
         ]
 
     def download(self):
@@ -72,7 +78,9 @@ class TspLibGraphInstanceDb:
             if start_parsing:
                 if line.startswith("EOF"):
                     break
-                point_data = line.split(" ")
+                # Any whitespace: several TSPLIB files pad their columns
+                # (rat99: "  1  6  4"), which split(" ") turns into empties.
+                point_data = line.split()
                 if len(point_data) != 3:
                     msg = "Instance is not 2d-coordinate based."
                     raise ValueError(msg)
@@ -107,7 +115,22 @@ class TspLibGraphInstanceDb:
             f = gzip.GzipFile(fileobj=f_)
             lines = f.readlines()
             lines = [line.decode() for line in lines]  # to string
-            return self._create_graph(self._parse_points(lines))
+        # _create_graph rounds plain Euclidean distances, which is only the
+        # TSPLIB metric for EUC_2D (ATT/GEO/CEIL_2D optima would mismatch).
+        ewt = self._header(lines, "EDGE_WEIGHT_TYPE")
+        if ewt != "EUC_2D":
+            msg = f"{name}: EDGE_WEIGHT_TYPE {ewt!r} unsupported (EUC_2D only)"
+            raise ValueError(msg)
+        return self._create_graph(self._parse_points(lines))
+
+    @staticmethod
+    def _header(lines: typing.Iterable[str], key: str) -> str | None:
+        """Value of a `KEY : value` specification line, or None if absent."""
+        for line in lines:
+            m = re.match(rf"^{key}\s*:\s*(.+?)\s*$", line)
+            if m:
+                return m.group(1)
+        return None
 
     def __iter__(self):
         yield from self.instance_names

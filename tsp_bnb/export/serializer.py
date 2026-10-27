@@ -2,6 +2,7 @@
 
 import logging
 import webbrowser
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 
@@ -32,11 +33,22 @@ class BnBSerializer:
     """
 
     def __init__(
-        self, instance: TSPInstance, output_root: Path = Path("output")
+        self,
+        instance: TSPInstance,
+        output_root: Path = Path("output"),
+        *,
+        render_svgs: bool = False,
     ) -> None:
         self._instance: TSPInstance = instance
         self._output_root: Path = output_root
         self.positions = compute_kamada_kawai_positions(instance)
+
+        # SVG rendering is disabled by default: the frontend TourSvg draws
+        # tours/LP solutions natively from the exported JSON, so per-node
+        # matplotlib SVGs were pure overhead — the dominant cost on large
+        # instances. The render logic stays intact; pass render_svgs=True to
+        # produce image artifacts again.
+        self._render_svgs: bool = render_svgs
 
         # State collected during search
         self._root: NodeVisData | None = None
@@ -137,19 +149,11 @@ class BnBSerializer:
         """
         if node.relaxed_solution.is_infeasible():
             return
-        filename = f"relaxation_{node.node_id}.svg"
-        self._ensure_dirs()
-        render_lp_solution(
-            self._instance,
-            self.positions,
-            list(node.relaxed_solution.edge_fractions),
-            self._images_dir / filename,
-        )
         data.relaxed_solution = RelaxedSnapshot(
             edge_fractions=node.relaxed_solution.edge_fractions,
             objective=node.relaxed_solution.objective_value,
             is_integral_tour=node.relaxed_solution.is_feasible_tour(),
-            image_path=f"images/{filename}",
+            image_path=self._write_lp_svg(node),
         )
 
     def on_node_global_pruned(
@@ -187,45 +191,64 @@ class BnBSerializer:
         node: BnBNode,
         solution: TSPSolution,
     ) -> None:
-        """Called when a heuristic finds a feasible tour. Render tour SVG."""
-        filename = f"heuristic_{node.node_id}.svg"
-        self._ensure_dirs()
-        render_tour(
-            self._instance,
-            self.positions,
-            list(solution.edge_selection),
-            self._images_dir / filename,
+        """Called when a heuristic finds a feasible tour."""
+        image_path = self._write_tour_svg(
+            f"heuristic_{node.node_id}.svg", solution.edge_selection
         )
 
         data = self._node_data[node.node_id]
         data.heuristic_solution = TourSnapshot(
             edge_selection=solution.edge_selection,
             cost=solution.cost,
-            image_path=f"images/{filename}",
+            image_path=image_path,
         )
 
     def on_best_solution_updated(
         self, solution: TSPSolution, *, iteration: int
     ) -> None:
         """Called when the incumbent improves. Add to best_solutions timeline."""
-        filename = f"best_{iteration}.svg"
-        self._ensure_dirs()
-        render_tour(
-            self._instance,
-            self.positions,
-            list(solution.edge_selection),
-            self._images_dir / filename,
+        image_path = self._write_tour_svg(
+            f"best_{iteration}.svg", solution.edge_selection
         )
 
         entry = BestSolutionEntry(
             iteration=iteration,
             cost=solution.cost,
             edge_selection=solution.edge_selection,
-            image_path=f"images/{filename}",
+            image_path=image_path,
         )
         self._best_solutions.append(entry)
 
     # --- Helpers ---
+
+    def _write_lp_svg(self, node: BnBNode) -> str | None:
+        """Render the node's LP relaxation SVG, None when rendering is off."""
+        if not self._render_svgs:
+            return None
+        filename = f"relaxation_{node.node_id}.svg"
+        self._ensure_dirs()
+        render_lp_solution(
+            self._instance,
+            self.positions,
+            list(node.relaxed_solution.edge_fractions),
+            self._images_dir / filename,
+        )
+        return f"images/{filename}"
+
+    def _write_tour_svg(
+        self, filename: str, edge_selection: Sequence[int]
+    ) -> str | None:
+        """Render a tour SVG (heuristic/incumbent), None when rendering is off."""
+        if not self._render_svgs:
+            return None
+        self._ensure_dirs()
+        render_tour(
+            self._instance,
+            self.positions,
+            list(edge_selection),
+            self._images_dir / filename,
+        )
+        return f"images/{filename}"
 
     def _ensure_dirs(self) -> None:
         """Create run + images directories on first render. Idempotent."""

@@ -78,7 +78,7 @@ update-python:
 update-frontend *FLAGS:
     #!/usr/bin/env bash
     set -euxo pipefail
-    mise exec -- pnpm -C {{ frontend_dir }} update {{FLAGS}}
+    mise exec -- pnpm -C {{ frontend_dir }} update {{ FLAGS }}
     if ! git diff --quiet -- {{ frontend_dir }}/pnpm-lock.yaml {{ frontend_dir }}/package.json; then
         echo "Changes detected in frontend lockfile/manifest, committing..."
         git add {{ frontend_dir }}/pnpm-lock.yaml {{ frontend_dir }}/package.json
@@ -87,16 +87,16 @@ update-frontend *FLAGS:
         echo "frontend packages already up to date."
     fi
 
-# Run tsplib example script
-example:
-    uv run python -m examples.run_tsplib
+# Run the TSPLIB runner (default eil51 + st70); pass instance names/flags through
+example *ARGS:
+    uv run main.py {{ ARGS }}
 
 # Build frontend and publish the viewer beside the run archive
 publish:
-  pnpm -C {{ frontend_dir }} build
-  rm -f output/index.html
-  rm -rf output/assets
-  cp -r frontend/dist/index.html frontend/dist/assets output/
+    pnpm -C {{ frontend_dir }} build
+    rm -f output/index.html
+    rm -rf output/assets
+    cp -r frontend/dist/* output/
 
 # Serve viewer + all runs (manual convenience; solver auto-starts one too).
 # Ensure/reuse the detached server, refresh the catalog, print the URL.

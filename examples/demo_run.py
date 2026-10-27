@@ -11,8 +11,6 @@ from tsp_bnb.heuristics import NearestNeighborHeuristic, TwoOptImproved
 from tsp_bnb.open_nodes import OpenNodeQueue, best_bound_order
 from tsp_bnb.relaxation import LPRelaxation
 
-from examples.tsplib import TspLibGraphInstanceDb
-
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -22,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def run_square4():
+def run_square4(*, open_browser: bool = True):
     """4-city complete graph (square). Optimal tour cost = 8.
 
     Layout:
@@ -48,6 +46,7 @@ def run_square4():
         node_queue=OpenNodeQueue(priority=best_bound_order),
         branching_strategy=MostFractionalBranchingStrategy(),
         root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
+        serializer=BnBSerializer(instance),
     )
 
     solution = bnb.search(iteration_limit=100)
@@ -58,8 +57,11 @@ def run_square4():
     assert solution is not None, "BnB should return a solution"
     assert solution.cost == 8, f"Expected cost 8, got {solution.cost}"
 
+    run_dir = bnb.save(open_browser=open_browser)
+    logger.info("%s: run exported to %s", instance.name, run_dir)
 
-def run_pentagon5():
+
+def run_pentagon5(*, open_browser: bool = True):
     """5-city graph that produces a fractional LP relaxation.
 
     Uses the classic fractional TSP example: a 5-node graph where the LP
@@ -88,6 +90,7 @@ def run_pentagon5():
         node_queue=OpenNodeQueue(priority=best_bound_order),
         branching_strategy=MostFractionalBranchingStrategy(),
         root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
+        serializer=BnBSerializer(instance),
     )
 
     solution = bnb.search(iteration_limit=100)
@@ -98,76 +101,10 @@ def run_pentagon5():
     assert solution is not None, "BnB should return a solution"
     logger.info("Best cost: %s", solution.cost)
 
-
-def run_eil51(*, open_browser: bool = True):
-    """eil51: 51-city EUC_2D instance. Optimal tour cost = 426."""
-    db = TspLibGraphInstanceDb()
-    graph = db["eil51"]
-    instance = TSPInstance(graph=graph, name="eil51")
-    serializer = BnBSerializer(instance)
-
-    bnb = TSPBnb(
-        instance=instance,
-        relaxation_cls=LPRelaxation,
-        node_queue=OpenNodeQueue(priority=best_bound_order),
-        branching_strategy=MostFractionalBranchingStrategy(),
-        root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
-        serializer=serializer,
-    )
-
-    solution = bnb.search(iteration_limit=10_000)
-    logger.info(
-        "Finished search with %d iterations.", bnb.progress_tracker.num_iterations
-    )
-
-    assert solution is not None, "BnB should return a solution"
-
-    optimal_cost = 426
-    assert solution.cost == optimal_cost, (
-        f"BnB should return the optimal solution for eil51 (expected {optimal_cost}, got {solution.cost})"
-    )
-
     run_dir = bnb.save(open_browser=open_browser)
-    logger.info("Run exported to %s", run_dir)
-    return run_dir
-
-
-def run_st70(*, open_browser: bool = True):
-    """st70: 70-city EUC_2D instance. Optimal tour cost = 675."""
-    db = TspLibGraphInstanceDb()
-    graph = db["st70"]
-    instance = TSPInstance(graph=graph, name="st70")
-    serializer = BnBSerializer(instance)
-
-    bnb = TSPBnb(
-        instance=instance,
-        relaxation_cls=LPRelaxation,
-        node_queue=OpenNodeQueue(priority=best_bound_order),
-        branching_strategy=MostFractionalBranchingStrategy(),
-        root_heuristics=TwoOptImproved(NearestNeighborHeuristic()),
-        serializer=serializer,
-    )
-
-    solution = bnb.search(iteration_limit=10_000)
-    logger.info(
-        "Finished search with %d iterations.", bnb.progress_tracker.num_iterations
-    )
-
-    assert solution is not None, "BnB should return a solution"
-
-    optimal_cost = 675
-    assert solution.cost == optimal_cost, (
-        f"BnB should return the optimal solution for st70 (expected {optimal_cost}, got {solution.cost})"
-    )
-
-    run_dir = bnb.save(open_browser=open_browser)
-    logger.info("Run exported to %s", run_dir)
-
-
-def main():
-    run_eil51()
-    run_st70()
+    logger.info("%s: run exported to %s", instance.name, run_dir)
 
 
 if __name__ == "__main__":
-    main()
+    run_pentagon5()
+    run_square4()

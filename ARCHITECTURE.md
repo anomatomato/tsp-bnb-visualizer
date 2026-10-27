@@ -98,12 +98,12 @@ tsp-bnb-visualizer/
 │       ├── renderer.py         # matplotlib/networkx SVG rendering
 │       └── serializer.py       # BnBSerializer — run dir, JSON, index.html
 ├── examples/
-│   ├── run_tsplib.py           # run BnB on a TSPLIB instance (eil51 default)
-│   └── tsplib.py               # TSPLIB archive loader (EUC_2D only)
+│   ├── tsplib.py               # TSPLIB archive loader (EUC_2D gate)
+│   └── data/                   # ALL_tsp.tar.gz TSPLIB archive
 ├── tests/                      # pytest (+hypothesis): test_cut_pool, test_relaxation
 ├── frontend/                   # React + Vite + pnpm (see below)
 ├── output/                     # gitignored run artifacts
-└── main.py                     # placeholder
+└── main.py                     # TSPLIB runner: registry, CLI (uv run main.py)
 ```
 
 ### Frontend structure (target)
@@ -249,7 +249,7 @@ Stick to this set (`10 20 30 50 80`) rather than arbitrary values. Alpha blends 
 ## Data Flow (static only)
 
 ```
-uv run python -m examples.run_tsplib
+uv run main.py [instances] [--limit N] [--no-browser] [--no-export]
         │
         ▼
 search → serializer.save()   (owns the ordering)

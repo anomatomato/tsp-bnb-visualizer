@@ -1,7 +1,7 @@
 import { ModeToggle } from "@/components/mode-toggle"
 import { useRunContext } from "@/context/run-context"
-import RunPicker from "./run-picker"
-import { SolverConfig } from "./solver-config"
+import { RunPicker } from "./components/run-picker"
+import { SolverConfig } from "./components/solver-config"
 
 export function Header() {
   const { runData } = useRunContext()

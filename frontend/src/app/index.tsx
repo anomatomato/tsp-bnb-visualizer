@@ -7,7 +7,7 @@ import { BnBTree } from "@/features/tree/tree"
 import Inspector from "@/features/inspector/inspector"
 import { useRunContext } from "@/context/run-context"
 import AppProvider from "./provider"
-import { Header } from "./header"
+import { Header } from "@/features/header"
 
 export function App() {
   return (

@@ -17,7 +17,7 @@ import { formatRunDate } from "@/lib/format"
 import { cn } from "cn"
 import type { RunIndexEntry } from "@/lib/run"
 
-export default function RunPicker() {
+export function RunPicker() {
   const { runIndex, runId, selectRun, runData } = useRunContext()
   const recent = runIndex.slice(0, 5)
   const groups = Object.groupBy(runIndex, (entry) => entry.name)

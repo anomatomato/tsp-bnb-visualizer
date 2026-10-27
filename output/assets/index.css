@@ -1748,8 +1748,14 @@
   .fill-background {
     fill: var(--background);
   }
-  .fill-foreground {
+  .fill-foreground,
+  .fill-foreground\/70 {
     fill: var(--foreground);
+  }
+  @supports (color: color-mix(in lab, red, red)) {
+    .fill-foreground\/70 {
+      fill: color-mix(in oklab, var(--foreground) 70%, transparent);
+    }
   }
   .fill-pink-500 {
     fill: var(--color-pink-500);
@@ -1757,14 +1763,30 @@
   .stroke-background {
     stroke: var(--background);
   }
-  .stroke-foreground {
-    stroke: var(--foreground);
+  .stroke-bnb-edge-included,
+  .stroke-bnb-edge-included\/80 {
+    stroke: var(--bnb-edge-included);
   }
-  .stroke-primary {
-    stroke: var(--primary);
+  @supports (color: color-mix(in lab, red, red)) {
+    .stroke-bnb-edge-included\/80 {
+      stroke: color-mix(in oklab, var(--bnb-edge-included) 80%, transparent);
+    }
   }
-  .stroke-warning {
-    stroke: var(--warning);
+  .stroke-destructive\/80 {
+    stroke: var(--destructive);
+  }
+  @supports (color: color-mix(in lab, red, red)) {
+    .stroke-destructive\/80 {
+      stroke: color-mix(in oklab, var(--destructive) 80%, transparent);
+    }
+  }
+  .stroke-muted-foreground\/40 {
+    stroke: var(--muted-foreground);
+  }
+  @supports (color: color-mix(in lab, red, red)) {
+    .stroke-muted-foreground\/40 {
+      stroke: color-mix(in oklab, var(--muted-foreground) 40%, transparent);
+    }
   }
   .p-\(--card-spacing\) {
     padding: var(--card-spacing);
@@ -3394,6 +3416,7 @@
   --bnb-status-infeasible: oklch(57.7% 0.245 27.325);
   --bnb-status-branched: oklch(55.8% 0.288 302.321);
   --bnb-status-pruned: var(--muted-foreground);
+  --bnb-edge-included: oklch(54.6% 0.245 262.881);
 }
 .dark {
   --background: oklch(14.5% 0 0);
@@ -3433,6 +3456,7 @@
   --bnb-status-infeasible: oklch(70.4% 0.191 22.216);
   --bnb-status-branched: oklch(71.4% 0.203 305.504);
   --bnb-status-pruned: var(--muted-foreground);
+  --bnb-edge-included: oklch(70.7% 0.165 258);
 }
 .react-flow__attribution {
   visibility: hidden;

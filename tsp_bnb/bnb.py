@@ -33,6 +33,16 @@ from .solution_pool import SolutionPool
 logger = logging.getLogger(__name__)
 
 
+class IterationLimitReached(ValueError):
+    """search() ran out of iterations before proving optimality.
+
+    Subclasses ValueError so existing `except ValueError` callers keep
+    working; catch this class to tell a limit hit apart from real errors.
+    The incumbent and every recorded event survive on the solver, so a
+    partial run can still be inspected and exported.
+    """
+
+
 class TSPBnb:
     """
     Branch-and-bound solver for the Traveling Salesman Problem.
@@ -171,7 +181,8 @@ class TSPBnb:
             The best feasible solution found (relaxed) or None if none found.
 
         Raises:
-            ValueError: if the iteration_limit is reached without completion.
+            IterationLimitReached: if the iteration_limit is reached without
+                completion (a ValueError subclass).
         """
 
         # Initialize root node and progress tracking
@@ -207,7 +218,7 @@ class TSPBnb:
 
         else:
             # Iteration limit exhausted without finishing
-            raise ValueError(f"Iteration limit of {iteration_limit} reached")
+            raise IterationLimitReached(f"Iteration limit of {iteration_limit} reached")
 
         self.progress_tracker.end_search()
         return self.solutions.best_solution()
