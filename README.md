@@ -1,5 +1,9 @@
 # TSP BnB Visualizer
 
+
+https://github.com/user-attachments/assets/ac937034-f02f-49fe-ad2f-98806e28d89e
+
+
 A research tool for visualizing **TSP Branch-and-Bound**. The Python backend solves TSP with HiGHS LP relaxations, lazy subtour-elimination cuts and most-fractional branching. It records every iteration, and the React frontend replays the search tree step by step.
 
 Each solver run writes a self-contained run directory in `output/`, and the viewer `output/index.html` loads it afterwards.
