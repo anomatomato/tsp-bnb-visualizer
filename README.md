@@ -73,7 +73,7 @@ Reference results (best-bound search, default limits):
 | rat99    | 17         | optimum 1211  |
 | kroA100  | 543        | optimum 21282 |
 
-`examples/demo_run.py` shows how to define custom instances and visualize them.
+- `examples/demo_run.py` demonstrates how to define custom instances and visualize them.
 
 ## What a run directory contains
 
